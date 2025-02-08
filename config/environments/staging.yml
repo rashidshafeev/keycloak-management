@@ -1,0 +1,118 @@
+# /keycloak-management/config/environments/production.yml
+---
+# System Configuration
+system:
+  # Firewall settings
+  firewall:
+    allowed_ports:
+      - 22    # SSH
+      - 80    # HTTP
+      - 443   # HTTPS
+      - 8080  # Keycloak HTTP
+      - 8443  # Keycloak HTTPS
+    # IPs that are allowed to access Keycloak admin console
+    admin_allowed_ips:
+      - "10.0.0.0/8"    # Internal network
+      - "192.168.1.0/24" # VPN network
+  
+  # Base system packages required
+  packages:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg
+    - ufw
+    - fail2ban
+    - python3-pip
+    - git
+
+# Docker Configuration
+docker:
+  version: "latest"
+  network_name: "keycloak-network"
+  compose_version: "2.17.2"
+  registry_mirrors:
+    - "https://mirror.gcr.io"
+  default_logging:
+    driver: "json-file"
+    options:
+      max-size: "100m"
+      max-file: "3"
+
+# Database Configuration
+database:
+  vendor: "postgres"
+  version: "15"
+  name: "keycloak"
+  user: "keycloak"
+  # Password will be taken from .env
+  port: 5432
+  backup:
+    retention_days: 7
+    schedule: "0 2 * * *"  # Every day at 2 AM
+    location: "/opt/fawz/backups/db"
+
+# Keycloak Configuration
+keycloak:
+  version: "21.1.1"
+  http_port: 8080
+  https_port: 8443
+  admin:
+    username: "admin"
+    # Password will be taken from .env
+  realm:
+    name: "fawz-realm"
+    display_name: "Fawz Organization"
+    # Default roles for new users
+    default_roles:
+      - "user"
+    # Available roles in the realm
+    roles:
+      - name: "user"
+        description: "Basic user role"
+      - name: "admin"
+        description: "Administrator role"
+  clients:
+    - name: "fawz-frontend"
+      type: "public"
+      redirect_uris:
+        - "http://localhost:3000/*"
+        - "https://app.example.com/*"
+    - name: "fawz-auth-service"
+      type: "confidential"
+      redirect_uris:
+        - "http://localhost:3001/api/auth/callback"
+        - "https://api.example.com/auth/callback"
+
+# SSL/TLS Configuration
+ssl:
+  provider: "letsencrypt"
+  email: "admin@example.com"
+  # Whether to use staging certificates for testing
+  staging: false
+  domains:
+    - "auth.example.com"
+  auto_renewal: true
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  prometheus:
+    port: 9090
+    retention_days: 15
+  grafana:
+    port: 3000
+    admin_user: "admin"
+    # Password will be taken from .env
+
+# Backup Configuration
+backup:
+  enabled: true
+  types:
+    - database
+    - realm_config
+    - certificates
+  retention:
+    days: 30
+    minimum_backups: 5
+  schedule: "0 3 * * *"  # Every day at 3 AM

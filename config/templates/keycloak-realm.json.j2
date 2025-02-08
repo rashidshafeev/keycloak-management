@@ -1,0 +1,15 @@
+{
+  "realm": "{{ realm.name }}",
+  "enabled": true,
+  "displayName": "{{ realm.display_name }}",
+  "roles": {
+    "realm": [
+      {% for role in realm.roles %}
+      {
+        "name": "{{ role.name }}",
+        "description": "{{ role.description }}"
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+}
