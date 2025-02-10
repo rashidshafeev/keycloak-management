@@ -6,6 +6,7 @@ from ..system.docker import DockerSetupStep
 from ..system.firewall import FirewallSetupStep
 from ..security.ssl import CertificateManager
 from ..keycloak.deploy import KeycloakDeploymentStep
+from .database_backup import DatabaseBackupStep
 from .base import DeploymentStep
 
 class DeploymentOrchestrator:
@@ -17,7 +18,8 @@ class DeploymentOrchestrator:
             FirewallSetupStep(self.config),
             DockerSetupStep(),
             CertificateManager(self.config),
-            KeycloakDeploymentStep(self.config)
+            KeycloakDeploymentStep(self.config),
+            DatabaseBackupStep(self.config)
         ]
 
     def _load_config(self, config_path: Path) -> dict:
