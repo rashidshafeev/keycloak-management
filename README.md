@@ -1,31 +1,26 @@
-# Keycloak Deployment Automation
+# Keycloak Management Tool
 
-An automated deployment tool for setting up production-ready Keycloak instances with proper security configurations, monitoring, and maintenance capabilities.
+A comprehensive tool for managing Keycloak instances in development and production environments. This tool provides automated setup, configuration, monitoring, and maintenance capabilities for Keycloak deployments.
 
 ## Features
 
-- Automated system preparation and security hardening
-- Docker-based Keycloak deployment
-- Automatic SSL certificate management via Let's Encrypt
-- Firewall configuration with fail2ban integration
-- Database backup management
-- Email and SMS notification setup
-- Monitoring setup (Prometheus & Grafana)
-- Multi-environment support (staging/production)
+- 🚀 Automated Keycloak deployment with Docker
+- 🔒 Security configuration and hardening
+- 📜 SSL certificate management (Let's Encrypt integration)
+- 🔄 Automated backup and restore
+- 📊 Monitoring integration (Prometheus & Grafana)
+- ✉️ Notification system (Email & SMS)
+- 🌍 Multi-environment support
+- 🔑 Realm and client management
+- 👥 User and role management
 
 ## Prerequisites
 
-- Ubuntu 20.04 or newer
 - Python 3.8+
-- Root access to the target server
+- Docker and Docker Compose
+- Access to target deployment server
 
-## Quick Installation
-
-```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/keycloak-management/main/install.sh | sudo bash
-```
-
-## Manual Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -35,8 +30,10 @@ cd keycloak-management
 
 2. Create and activate virtual environment:
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+python -m venv venv
+source venv/bin/activate  # On Unix/macOS
+# OR
+.\venv\Scripts\activate  # On Windows
 ```
 
 3. Install dependencies:
@@ -51,100 +48,94 @@ pip install -r requirements.txt
 cp config/.env.example config/.env
 ```
 
-2. Configure the required environment variables:
+2. Configure the environment variables:
 
 ### Required Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| POSTGRES_PASSWORD | PostgreSQL database password | `strongpassword123` |
-| KEYCLOAK_ADMIN_PASSWORD | Keycloak admin console password | `adminpass123` |
-| KEYCLOAK_CLIENT_SECRET | Secret for secure client connections | `clientsecret123` |
-| GRAFANA_ADMIN_PASSWORD | Grafana dashboard admin password | `grafanapass123` |
-| SSL_EMAIL | Email for SSL certificate registration | `admin@example.com` |
-| SSL_DOMAINS | Comma-separated list of domains | `auth.example.com` |
-| SMTP_HOST | SMTP server hostname | `smtp.gmail.com` |
-| SMTP_PORT | SMTP server port | `587` |
-| SMTP_USER | SMTP authentication username | `your-email@gmail.com` |
-| SMTP_PASSWORD | SMTP authentication password | `your-app-password` |
-| SMTP_FROM | Email sender address | `noreply@yourdomain.com` |
-| TWILIO_ACCOUNT_SID | Twilio account SID (for SMS) | `ACxxxxxxxxxxxxxxxx` |
-| TWILIO_AUTH_TOKEN | Twilio authentication token | `your-auth-token` |
-| TWILIO_FROM_NUMBER | Twilio sender phone number | `+1234567890` |
+| KEYCLOAK_ADMIN | Keycloak admin username | `admin` |
+| KEYCLOAK_ADMIN_PASSWORD | Keycloak admin password | `adminpass123` |
+| KEYCLOAK_DB_PASSWORD | Database password | `dbpass123` |
+| KEYCLOAK_HOSTNAME | Keycloak hostname | `auth.example.com` |
+| SSL_EMAIL | Email for SSL certificates | `admin@example.com` |
+
+### Optional Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| SMTP_HOST | SMTP server for notifications | `smtp.gmail.com` |
+| SMTP_PORT | SMTP port | `587` |
+| SMTP_USER | SMTP username | `notifications@example.com` |
+| SMTP_PASSWORD | SMTP password | `smtppass123` |
+| MONITORING_ENABLED | Enable Prometheus/Grafana | `true` |
 
 ## Usage
 
-1. Deploy to staging environment:
+### Development Environment
+
 ```bash
-sudo keycloak-deploy --config config/environments/staging.yml
+python manage.py deploy --env development
 ```
 
-2. Deploy to production:
+### Production Environment
+
 ```bash
-sudo keycloak-deploy --config config/environments/production.yml
+python manage.py deploy --env production
 ```
 
-## Development Guidelines
+### Backup Management
 
-### Project Structure
+```bash
+# Create backup
+python manage.py backup create
+
+# List backups
+python manage.py backup list
+
+# Restore from backup
+python manage.py backup restore <backup-id>
+```
+
+### Realm Management
+
+```bash
+# Create realm
+python manage.py realm create <realm-name>
+
+# Import realm configuration
+python manage.py realm import <config-file>
+
+# Export realm configuration
+python manage.py realm export <realm-name>
+```
+
+## Project Structure
+
 ```
 keycloak-management/
-├── src/
-│   ├── deployment/     # Core deployment logic
-│   ├── keycloak/      # Keycloak-specific configuration
-│   ├── security/      # Security-related components
-│   ├── system/        # System preparation and setup
-│   └── utils/         # Utility functions and helpers
-├── config/
-│   ├── environments/  # Environment-specific configurations
-│   └── templates/     # Configuration templates
+├── src/                    # Source code
+│   ├── core/              # Core functionality
+│   ├── commands/          # CLI commands
+│   ├── config/            # Configuration management
+│   ├── deploy/            # Deployment logic
+│   ├── backup/            # Backup management
+│   └── monitoring/        # Monitoring setup
+├── config/                # Configuration files
+│   ├── environments/      # Environment configs
+│   └── templates/         # Config templates
+├── scripts/               # Utility scripts
+└── tests/                 # Test suite
 ```
 
-### Adding New Features
-
-1. **New Deployment Steps**
-   - Create a new class inheriting from `DeploymentStep`
-   - Implement required methods: `check_completed()`, `execute()`, `cleanup()`
-   - Add the step to `DeploymentOrchestrator`
-
-2. **Configuration Changes**
-   - Add new configuration options to environment YAML files
-   - Update configuration templates if needed
-   - Add corresponding environment variables to `.env.example`
-
-3. **Testing**
-   - Write unit tests for new components
-   - Test in staging environment before production
-   - Verify cleanup procedures work correctly
-
-### Code Style Guidelines
-
-1. **Python Standards**
-   - Follow PEP 8 guidelines
-   - Use type hints for function arguments and returns
-   - Document classes and methods using docstrings
-
-2. **Error Handling**
-   - Implement proper error handling and logging
-   - Ensure cleanup procedures for failure scenarios
-   - Maintain idempotency in deployment steps
-
-3. **Security Practices**
-   - Never commit sensitive data or credentials
-   - Use environment variables for sensitive information
-   - Implement proper permission checks
-
-### Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT License
-
-## Support
-
-For support, please open an issue on the GitHub repository or contact the maintainers.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

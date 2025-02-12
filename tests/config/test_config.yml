@@ -1,0 +1,96 @@
+# Test Configuration
+realm:
+  name: "test-realm"
+  enabled: true
+  displayName: "Test Realm"
+  loginTheme: "keycloak"
+  accountTheme: "keycloak"
+  adminTheme: "keycloak"
+  emailTheme: "keycloak"
+  defaultRoles: ["offline_access", "uma_authorization"]
+
+security:
+  passwordPolicy:
+    - type: "length"
+      value: 8
+    - type: "upperCase"
+      value: 1
+    - type: "lowerCase"
+      value: 1
+    - type: "digits"
+      value: 1
+  bruteForceProtection:
+    enabled: true
+    maxLoginFailures: 3
+    waitIncrements: 60
+    quickLoginCheckMilliSeconds: 1000
+    minimumQuickLoginWaitSeconds: 60
+    maxFailureWaitSeconds: 900
+    failureResetTimeSeconds: 43200
+  sessions:
+    ssoSessionIdleTimeout: 1800
+    ssoSessionMaxLifespan: 36000
+    offlineSessionIdleTimeout: 2592000
+    accessTokenLifespan: 300
+    accessTokenLifespanForImplicitFlow: 900
+
+clients:
+  - clientId: "test-client"
+    name: "Test Client"
+    protocol: "openid-connect"
+    enabled: true
+    publicClient: false
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: true
+    serviceAccountsEnabled: true
+    redirectUris:
+      - "https://test.com/*"
+    webOrigins:
+      - "https://test.com"
+
+roles:
+  - name: "test-role"
+    description: "Test role"
+    composite: false
+
+authentication:
+  flows:
+    - alias: "test-browser"
+      providerId: "basic-flow"
+      description: "Test browser based authentication"
+      topLevel: true
+      builtIn: false
+      authenticationExecutions:
+        - authenticator: "auth-cookie"
+          requirement: "ALTERNATIVE"
+          priority: 10
+        - authenticator: "auth-username-password-form"
+          requirement: "REQUIRED"
+          priority: 20
+  requiredActions:
+    - alias: "CONFIGURE_TOTP"
+      name: "Configure OTP"
+      enabled: true
+      defaultAction: false
+
+events:
+  storage:
+    expiration: 7200
+  listeners:
+    - name: "email"
+      type: "email"
+      enabled: true
+      properties:
+        events:
+          - "LOGIN"
+          - "LOGIN_ERROR"
+          - "REGISTER"
+    - name: "webhook"
+      type: "webhook"
+      enabled: true
+      properties:
+        url: "https://webhook.test.com"
+        events:
+          - "LOGIN"
+          - "REGISTER"

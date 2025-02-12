@@ -1,0 +1,105 @@
+# Monitoring and Metrics Configuration
+monitoring:
+  # Metrics Configuration
+  metrics:
+    enabled: true
+    prefix: "keycloak"
+    
+    # JVM Metrics
+    jvm_metrics:
+      enabled: true
+      memory: true
+      gc: true
+      threads: true
+      
+    # HTTP Metrics
+    http_metrics:
+      enabled: true
+      request_duration: true
+      request_size: true
+      response_size: true
+      
+    # Database Metrics
+    db_metrics:
+      enabled: true
+      connections: true
+      transactions: true
+      
+  # Health Checks
+  health:
+    enabled: true
+    checks:
+      - name: "database"
+        enabled: true
+      - name: "filesystem"
+        enabled: true
+      - name: "infinispan"
+        enabled: true
+        
+  # Logging
+  logging:
+    level:
+      root: "INFO"
+      org.keycloak: "INFO"
+      org.infinispan: "INFO"
+      
+    # Log Categories
+    categories:
+      admin_events:
+        level: "INFO"
+        handlers:
+          - type: "file"
+            path: "/var/log/keycloak/admin.log"
+            format: "json"
+            
+      auth_events:
+        level: "INFO"
+        handlers:
+          - type: "file"
+            path: "/var/log/keycloak/auth.log"
+            format: "json"
+            
+      audit:
+        level: "INFO"
+        handlers:
+          - type: "file"
+            path: "/var/log/keycloak/audit.log"
+            format: "json"
+            
+  # Alerting
+  alerting:
+    enabled: true
+    
+    # Alert Rules
+    rules:
+      - name: "high_error_rate"
+        query: 'rate(keycloak_request_errors_total[5m]) > 0.1'
+        duration: "5m"
+        severity: "warning"
+        
+      - name: "high_response_time"
+        query: 'histogram_quantile(0.95, rate(keycloak_request_duration_seconds_bucket[5m])) > 2'
+        duration: "5m"
+        severity: "warning"
+        
+      - name: "high_memory_usage"
+        query: 'jvm_memory_bytes_used{area="heap"} / jvm_memory_bytes_max{area="heap"} > 0.9'
+        duration: "5m"
+        severity: "critical"
+        
+    # Alert Notifications
+    notifications:
+      slack:
+        enabled: true
+        webhook_url: "${SLACK_WEBHOOK_URL}"
+        channel: "#keycloak-alerts"
+        
+      email:
+        enabled: true
+        from: "keycloak@fawz.com"
+        to: "ops@fawz.com"
+        smtp:
+          host: "${SMTP_HOST}"
+          port: 587
+          username: "${SMTP_USERNAME}"
+          password: "${SMTP_PASSWORD}"

@@ -1,0 +1,45 @@
+# SMTP Configuration
+smtp:
+  enabled: true
+  host: "${SMTP_HOST}"
+  port: 587
+  from: "noreply@fawz.com"
+  fromDisplayName: "Fawz"
+  replyTo: "support@fawz.com"
+  replyToDisplayName: "Fawz Support"
+  
+  # Authentication
+  auth: true
+  username: "${SMTP_USERNAME}"
+  password: "${SMTP_PASSWORD}"
+  
+  # Security
+  starttls: true
+  ssl: false
+  
+  # Advanced Settings
+  timeout: 10000 # 10 seconds
+  connectionTimeout: 10000 # 10 seconds
+  maxRetries: 3
+  
+  # Templates
+  templates:
+    # Email Verification
+    emailVerification:
+      subject: "Verify your email for Fawz"
+      template: "email-verification.ftl"
+      
+    # Password Reset
+    passwordReset:
+      subject: "Reset your Fawz password"
+      template: "password-reset.ftl"
+      
+    # Welcome Email
+    welcome:
+      subject: "Welcome to Fawz"
+      template: "welcome.ftl"
+      
+    # Identity Provider Link
+    identityProviderLink:
+      subject: "Link your account"
+      template: "identity-provider-link.ftl"

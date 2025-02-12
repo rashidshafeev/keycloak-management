@@ -1,0 +1,48 @@
+# Identity Providers Configuration
+identity_providers:
+  # Google Authentication
+  - alias: "google"
+    displayName: "Google"
+    enabled: true
+    providerId: "google"
+    firstBrokerLoginFlowAlias: "first broker login"
+    config:
+      clientId: "${GOOGLE_CLIENT_ID}"
+      clientSecret: "${GOOGLE_CLIENT_SECRET}"
+      useUserInfoFor: "name email"
+      defaultScope: "openid email profile"
+      syncMode: "IMPORT"
+      
+  # Microsoft Authentication
+  - alias: "microsoft"
+    displayName: "Microsoft"
+    enabled: true
+    providerId: "microsoft"
+    firstBrokerLoginFlowAlias: "first broker login"
+    config:
+      clientId: "${MS_CLIENT_ID}"
+      clientSecret: "${MS_CLIENT_SECRET}"
+      tenant: "common"
+      authorizationUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
+      tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+      defaultScope: "openid email profile"
+      syncMode: "IMPORT"
+      
+  # SAML Enterprise IdP
+  - alias: "enterprise-saml"
+    displayName: "Enterprise SSO"
+    enabled: true
+    providerId: "saml"
+    firstBrokerLoginFlowAlias: "first broker login"
+    config:
+      entityId: "https://auth.fawz.com/realms/fawz"
+      singleSignOnServiceUrl: "${ENTERPRISE_SSO_URL}"
+      nameIDPolicyFormat: "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
+      principalType: "SUBJECT"
+      signatureAlgorithm: "RSA_SHA256"
+      xmlSignKeyInfoKeyNameTransformer: "KEY_ID"
+      postBindingAuthnRequest: "true"
+      postBindingResponse: "true"
+      validateSignature: "true"
+      signingCertificate: "${ENTERPRISE_SIGNING_CERT}"
+      syncMode: "FORCE"

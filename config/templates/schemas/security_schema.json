@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["security"],
+  "properties": {
+    "security": {
+      "type": "object",
+      "required": ["passwordPolicy", "bruteForceProtection", "ssl"],
+      "properties": {
+        "passwordPolicy": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "value"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "length",
+                  "digits",
+                  "lowerCase",
+                  "upperCase",
+                  "specialChars",
+                  "notUsername",
+                  "notEmail",
+                  "passwordHistory",
+                  "forceExpiredPasswordChange",
+                  "hashIterations"
+                ]
+              },
+              "value": {
+                "type": ["string", "integer"],
+                "description": "Value for the policy"
+              }
+            }
+          }
+        },
+        "bruteForceProtection": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable brute force protection"
+            },
+            "maxLoginFailures": {
+              "type": "integer",
+              "description": "Maximum number of login failures before lockout"
+            },
+            "waitIncrements": {
+              "type": "integer",
+              "description": "Time increment for each failure in seconds"
+            },
+            "quickLoginCheckMillis": {
+              "type": "integer",
+              "description": "Minimum time between login attempts in milliseconds"
+            },
+            "minimumQuickLoginWaitSeconds": {
+              "type": "integer",
+              "description": "Minimum wait time after quick login violation"
+            },
+            "maxFailureWaitSeconds": {
+              "type": "integer",
+              "description": "Maximum wait time after failures"
+            },
+            "failureResetTimeSeconds": {
+              "type": "integer",
+              "description": "Time before failure count is reset"
+            }
+          }
+        },
+        "ssl": {
+          "type": "object",
+          "properties": {
+            "required": {
+              "type": "string",
+              "enum": ["all", "external", "none"],
+              "description": "SSL requirement level"
+            },
+            "hostnameVerification": {
+              "type": "boolean",
+              "description": "Enable hostname verification"
+            }
+          }
+        },
+        "headers": {
+          "type": "object",
+          "properties": {
+            "xFrameOptions": {
+              "type": "string",
+              "description": "X-Frame-Options header value"
+            },
+            "contentSecurityPolicy": {
+              "type": "string",
+              "description": "Content-Security-Policy header value"
+            },
+            "xContentTypeOptions": {
+              "type": "string",
+              "description": "X-Content-Type-Options header value"
+            },
+            "xRobotsTag": {
+              "type": "string",
+              "description": "X-Robots-Tag header value"
+            },
+            "xXSSProtection": {
+              "type": "string",
+              "description": "X-XSS-Protection header value"
+            }
+          }
+        },
+        "webAuthn": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable WebAuthn/FIDO2 support"
+            },
+            "passwordless": {
+              "type": "boolean",
+              "description": "Allow passwordless WebAuthn authentication"
+            },
+            "attestationConveyancePreference": {
+              "type": "string",
+              "enum": ["none", "indirect", "direct"],
+              "description": "Attestation conveyance preference"
+            },
+            "authenticatorAttachment": {
+              "type": "string",
+              "enum": ["platform", "cross-platform"],
+              "description": "Authenticator attachment mode"
+            },
+            "requireResidentKey": {
+              "type": "boolean",
+              "description": "Require resident key"
+            },
+            "userVerificationRequirement": {
+              "type": "string",
+              "enum": ["required", "preferred", "discouraged"],
+              "description": "User verification requirement"
+            },
+            "signatureAlgorithms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Allowed signature algorithms"
+            }
+          }
+        }
+      }
+    }
+  }
+}

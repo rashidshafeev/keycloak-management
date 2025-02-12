@@ -1,0 +1,64 @@
+# Theme Configuration
+themes:
+  # Fawz Theme
+  - name: "fawz"
+    parent: "keycloak"
+    types:
+      - "login"
+      - "account"
+      - "admin"
+      - "email"
+      
+    # Resources
+    resources:
+      - path: "css/styles.css"
+        type: "css"
+      - path: "js/script.js"
+        type: "js"
+      - path: "img/logo.png"
+        type: "image"
+        
+    # Templates
+    templates:
+      login:
+        - name: "login.ftl"
+          path: "templates/login.ftl"
+        - name: "register.ftl"
+          path: "templates/register.ftl"
+          
+      account:
+        - name: "account.ftl"
+          path: "templates/account.ftl"
+        - name: "password.ftl"
+          path: "templates/password.ftl"
+          
+    # Messages
+    messages:
+      en:
+        locale: "en"
+        messages:
+          - key: "loginTitle"
+            value: "Welcome to Fawz"
+          - key: "loginTitleHtml"
+            value: "Welcome to <strong>Fawz</strong>"
+          - key: "registerTitle"
+            value: "Create Fawz Account"
+            
+      ar:
+        locale: "ar"
+        messages:
+          - key: "loginTitle"
+            value: "مرحباً بك في فوز"
+          - key: "loginTitleHtml"
+            value: "مرحباً بك في <strong>فوز</strong>"
+          - key: "registerTitle"
+            value: "إنشاء حساب فوز"
+            
+    # Properties
+    properties:
+      parent: "keycloak"
+      import: "common/keycloak"
+      styles:
+        - "css/styles.css"
+      scripts:
+        - "js/script.js"

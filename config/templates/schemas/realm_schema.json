@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["realm"],
+  "properties": {
+    "realm": {
+      "type": "object",
+      "required": ["name", "enabled"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the realm"
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether the realm is enabled"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name for the realm"
+        },
+        "displayNameHtml": {
+          "type": "string",
+          "description": "HTML version of the display name"
+        },
+        "loginTheme": {
+          "type": "string",
+          "description": "Theme to use for login pages"
+        },
+        "accountTheme": {
+          "type": "string",
+          "description": "Theme to use for account pages"
+        },
+        "adminTheme": {
+          "type": "string",
+          "description": "Theme to use for admin console"
+        },
+        "emailTheme": {
+          "type": "string",
+          "description": "Theme to use for emails"
+        },
+        "internationalization": {
+          "type": "object",
+          "properties": {
+            "supportedLocales": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "List of supported locales"
+            },
+            "defaultLocale": {
+              "type": "string",
+              "description": "Default locale for the realm"
+            }
+          }
+        },
+        "loginSettings": {
+          "type": "object",
+          "properties": {
+            "registrationAllowed": {
+              "type": "boolean",
+              "description": "Allow users to self-register"
+            },
+            "resetPasswordAllowed": {
+              "type": "boolean",
+              "description": "Allow users to reset their password"
+            },
+            "rememberMe": {
+              "type": "boolean",
+              "description": "Allow remember me option"
+            },
+            "verifyEmail": {
+              "type": "boolean",
+              "description": "Require email verification"
+            },
+            "loginWithEmailAllowed": {
+              "type": "boolean",
+              "description": "Allow login with email"
+            }
+          }
+        },
+        "tokens": {
+          "type": "object",
+          "properties": {
+            "accessTokenLifespan": {
+              "type": "integer",
+              "description": "Access token lifespan in seconds"
+            },
+            "refreshTokenLifespan": {
+              "type": "integer",
+              "description": "Refresh token lifespan in seconds"
+            },
+            "ssoSessionIdleTimeout": {
+              "type": "integer",
+              "description": "SSO session idle timeout in seconds"
+            },
+            "ssoSessionMaxLifespan": {
+              "type": "integer",
+              "description": "SSO session max lifespan in seconds"
+            }
+          }
+        }
+      }
+    }
+  }
+}

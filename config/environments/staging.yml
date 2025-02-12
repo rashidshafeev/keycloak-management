@@ -1,4 +1,4 @@
-# /keycloak-management/config/environments/production.yml
+# /keycloak-management/config/environments/staging.yml
 ---
 # System Configuration
 system:
@@ -72,6 +72,22 @@ keycloak:
         description: "Basic user role"
       - name: "admin"
         description: "Administrator role"
+    # Event configuration
+    events:
+      listeners:
+        - name: "jboss-logging"
+          enabled: true
+        - name: "http-webhook"
+          enabled: true
+          properties:
+            url: "http://event-bus:3000/events"
+            secret: "${EVENT_WEBHOOK_SECRET}"
+      storage:
+        save_events: true
+        expiration: 2592000  # 30 days
+      admin_events:
+        enabled: true
+        include_representation: false
   clients:
     - name: "fawz-frontend"
       type: "public"

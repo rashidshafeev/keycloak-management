@@ -1,0 +1,59 @@
+# Client Applications Configuration
+clients:
+  # Main Fawz Web Application
+  - clientId: "fawz-web"
+    name: "Fawz Web Application"
+    enabled: true
+    protocol: "openid-connect"
+    publicClient: false
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: true
+    serviceAccountsEnabled: true
+    authorizationServicesEnabled: true
+    rootUrl: "https://app.fawz.com"
+    baseUrl: "/"
+    redirectUris:
+      - "https://app.fawz.com/*"
+    webOrigins:
+      - "https://app.fawz.com"
+    attributes:
+      pkce.code.challenge.method: "S256"
+    clientAuthenticatorType: "client-secret"
+    secret: "${FAWZ_WEB_CLIENT_SECRET}"
+
+  # Mobile Application
+  - clientId: "fawz-mobile"
+    name: "Fawz Mobile App"
+    enabled: true
+    protocol: "openid-connect"
+    publicClient: true
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: true
+    serviceAccountsEnabled: false
+    redirectUris:
+      - "com.fawz.mobile://*"
+    attributes:
+      pkce.code.challenge.method: "S256"
+
+  # Admin Dashboard
+  - clientId: "fawz-admin"
+    name: "Fawz Admin Dashboard"
+    enabled: true
+    protocol: "openid-connect"
+    publicClient: false
+    standardFlowEnabled: true
+    implicitFlowEnabled: false
+    directAccessGrantsEnabled: true
+    serviceAccountsEnabled: true
+    rootUrl: "https://admin.fawz.com"
+    baseUrl: "/"
+    redirectUris:
+      - "https://admin.fawz.com/*"
+    webOrigins:
+      - "https://admin.fawz.com"
+    attributes:
+      pkce.code.challenge.method: "S256"
+    clientAuthenticatorType: "client-secret"
+    secret: "${FAWZ_ADMIN_CLIENT_SECRET}"

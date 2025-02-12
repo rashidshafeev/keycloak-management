@@ -1,0 +1,40 @@
+# Realm Configuration
+realm:
+  name: "fawz"
+  displayName: "Fawz Application"
+  enabled: true
+  
+  # Browser settings
+  browserFlow: "browser"
+  browserSecurityHeaders:
+    contentSecurityPolicy: "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
+    xFrameOptions: "SAMEORIGIN"
+    xContentTypeOptions: "nosniff"
+    xRobotsTag: "none"
+    xXSSProtection: "1; mode=block"
+    strictTransportSecurity: "max-age=31536000; includeSubDomains"
+  
+  # SSL/HTTPS
+  sslRequired: "external"
+  
+  # Registration
+  registrationAllowed: true
+  registrationEmailAsUsername: true
+  verifyEmail: true
+  
+  # Remember Me
+  rememberMe: true
+  rememberMeMaxAge: 172800 # 2 days in seconds
+  
+  # Tokens
+  accessTokenLifespan: 300 # 5 minutes
+  accessTokenLifespanForImplicitFlow: 900 # 15 minutes
+  ssoSessionIdleTimeout: 1800 # 30 minutes
+  ssoSessionMaxLifespan: 36000 # 10 hours
+  offlineSessionIdleTimeout: 2592000 # 30 days
+  
+  # Themes
+  loginTheme: "fawz"
+  accountTheme: "fawz"
+  adminTheme: "fawz"
+  emailTheme: "fawz"

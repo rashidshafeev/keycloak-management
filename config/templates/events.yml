@@ -1,0 +1,80 @@
+# Keycloak Events Configuration
+events:
+  # Event Listener Configuration
+  listeners:
+    - name: "jboss-logging"
+      enabled: true
+    - name: "email"
+      enabled: false
+    - name: "http-webhook"
+      enabled: true
+      properties:
+        url: "http://event-bus:3000/events"
+        secret: "${EVENT_WEBHOOK_SECRET}"
+        retries: 3
+        timeout: 5000
+
+  # Event Types to Track
+  included_events:
+    # Authentication Events
+    - LOGIN
+    - LOGIN_ERROR
+    - LOGOUT
+    - LOGOUT_ERROR
+    
+    # Registration Events
+    - REGISTER
+    - REGISTER_ERROR
+    - UPDATE_PROFILE
+    - UPDATE_PASSWORD
+    - UPDATE_EMAIL
+    - VERIFY_EMAIL
+    
+    # Session Events
+    - CODE_TO_TOKEN
+    - REFRESH_TOKEN
+    - TOKEN_EXCHANGE
+    - REMOVE_TOKEN
+    
+    # Client Events
+    - CLIENT_LOGIN
+    - CLIENT_INITIATED_ACCOUNT_LINKING
+    
+    # Identity Provider Events
+    - IDENTITY_PROVIDER_LOGIN
+    - IDENTITY_PROVIDER_LINK_ACCOUNT
+
+  # Admin Events Configuration
+  admin_events:
+    enabled: true
+    # Include representation in events
+    include_representation: false
+    # Event types to exclude
+    excluded_operations:
+      - READ
+    # Save events for resources
+    included_resources:
+      - USER
+      - GROUP
+      - ROLE_MAPPING
+      - CLIENT
+
+  # Event Storage Configuration
+  storage:
+    # Save events to database
+    save_events: true
+    # Event expiration in seconds (30 days)
+    expiration: 2592000
+    # Maximum number of events to store
+    max_events: 1000000
+    
+  # Event Processing
+  processing:
+    # Process events asynchronously
+    async: true
+    # Batch size for async processing
+    batch_size: 100
+    # Maximum retry attempts for failed events
+    max_retries: 3
+    # Delay between retries in milliseconds
+    retry_delay: 1000

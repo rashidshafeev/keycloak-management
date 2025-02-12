@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "identityProviders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["alias", "providerId", "enabled"],
+        "properties": {
+          "alias": {
+            "type": "string",
+            "description": "Unique identifier for the identity provider"
+          },
+          "providerId": {
+            "type": "string",
+            "enum": [
+              "google",
+              "facebook",
+              "github",
+              "microsoft",
+              "twitter",
+              "linkedin",
+              "oidc",
+              "saml",
+              "keycloak-oidc"
+            ],
+            "description": "Type of identity provider"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether this provider is enabled"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the provider"
+          },
+          "firstBrokerLoginFlowAlias": {
+            "type": "string",
+            "description": "Authentication flow to use for first broker login"
+          },
+          "postBrokerLoginFlowAlias": {
+            "type": "string",
+            "description": "Authentication flow to use after broker login"
+          },
+          "storeToken": {
+            "type": "boolean",
+            "description": "Whether to store tokens from the provider"
+          },
+          "addReadTokenRoleOnCreate": {
+            "type": "boolean",
+            "description": "Whether to add token role on creation"
+          },
+          "trustEmail": {
+            "type": "boolean",
+            "description": "Whether to trust email from this provider"
+          },
+          "linkOnly": {
+            "type": "boolean",
+            "description": "Whether this provider is only for linking existing accounts"
+          },
+          "config": {
+            "type": "object",
+            "description": "Provider-specific configuration",
+            "properties": {
+              "clientId": {
+                "type": "string",
+                "description": "OAuth/OIDC client ID"
+              },
+              "clientSecret": {
+                "type": "string",
+                "description": "OAuth/OIDC client secret"
+              },
+              "defaultScope": {
+                "type": "string",
+                "description": "Default scope for provider"
+              },
+              "useJwksUrl": {
+                "type": "boolean",
+                "description": "Whether to use JWKS URL"
+              },
+              "syncMode": {
+                "type": "string",
+                "enum": ["IMPORT", "FORCE", "LEGACY"],
+                "description": "User sync mode"
+              },
+              "validateSignature": {
+                "type": "boolean",
+                "description": "Whether to validate signatures"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}

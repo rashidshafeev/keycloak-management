@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable metrics collection",
+              "default": true
+            },
+            "prefix": {
+              "type": "string",
+              "description": "Metrics name prefix",
+              "default": "keycloak"
+            },
+            "jvmEnabled": {
+              "type": "boolean",
+              "description": "Enable JVM metrics",
+              "default": true
+            },
+            "endpoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["type", "enabled"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["prometheus", "healthz"],
+                    "description": "Endpoint type"
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "description": "Enable this endpoint"
+                  },
+                  "path": {
+                    "type": "string",
+                    "description": "Endpoint path"
+                  },
+                  "auth": {
+                    "type": "object",
+                    "properties": {
+                      "enabled": {
+                        "type": "boolean",
+                        "description": "Enable authentication for this endpoint"
+                      },
+                      "username": {
+                        "type": "string",
+                        "description": "Authentication username"
+                      },
+                      "password": {
+                        "type": "string",
+                        "description": "Authentication password"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "health": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable health checks",
+              "default": true
+            },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "type", "enabled"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Health check name"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["database", "memory", "disk", "cpu"],
+                    "description": "Health check type"
+                  },
+                  "enabled": {
+                    "type": "boolean",
+                    "description": "Enable this health check"
+                  },
+                  "thresholds": {
+                    "type": "object",
+                    "properties": {
+                      "warning": {
+                        "type": "number",
+                        "description": "Warning threshold"
+                      },
+                      "critical": {
+                        "type": "number",
+                        "description": "Critical threshold"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

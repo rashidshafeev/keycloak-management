@@ -50,7 +50,16 @@ class KeycloakDeploymentStep(DeploymentStep):
                     "DB_USER": self.config["db_user"],
                     "DB_PASSWORD": self.config["db_password"],
                     "KEYCLOAK_ADMIN": self.config["admin_user"],
-                    "KEYCLOAK_ADMIN_PASSWORD": self.config["admin_password"]
+                    "KEYCLOAK_ADMIN_PASSWORD": self.config["admin_password"],
+                    # Event configuration
+                    "KC_SPI_EVENTS_LISTENER": "jboss-logging,http-webhook",
+                    "KC_EVENT_STORE_PROVIDER": "jpa",
+                    "KC_EVENT_STORE_EXPIRATION": str(self.config.get("events", {}).get("storage", {}).get("expiration", 2592000)),
+                    "KC_EVENT_ADMIN": "true",
+                    "KC_EVENT_ADMIN_INCLUDE_REPRESENTATION": "false",
+                    # Webhook configuration
+                    "KC_SPI_EVENTS_LISTENER_HTTP_WEBHOOK_URL": self.config.get("events", {}).get("listeners", [])[2].get("properties", {}).get("url", "http://event-bus:3000/events"),
+                    "KC_SPI_EVENTS_LISTENER_HTTP_WEBHOOK_SECRET": self.config.get("events", {}).get("listeners", [])[2].get("properties", {}).get("secret", "${EVENT_WEBHOOK_SECRET}"),
                 },
                 ports={
                     '8080/tcp': 8080,
