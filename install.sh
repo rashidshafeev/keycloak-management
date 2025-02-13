@@ -328,13 +328,87 @@ setup_virtualenv() {
 create_command() {
     if [[ -z "${completed_steps[command]}" ]]; then
         echo "Creating keycloak-deploy command..."
-        cat > /usr/local/bin/keycloak-deploy << 'EOL'
+        
+        # Create command file
+        cat > /usr/local/bin/keycloak-deploy << 'EOF'
 #!/bin/bash
-source /opt/fawz/keycloak/venv/bin/activate
-cd /opt/fawz/keycloak
-exec python deploy.py "$@"
-EOL
+
+INSTALL_DIR="/opt/fawz/keycloak"
+REPO_URL="https://git.rashidshafeev.ru/rashidshafeev/keycloak-management.git"
+
+update_installation() {
+    echo "Updating Keycloak Management System..."
+    
+    # Create backup of current installation
+    BACKUP_DIR="/opt/fawz/backup"
+    BACKUP_NAME="keycloak_backup_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "${BACKUP_DIR}"
+    
+    echo "Creating backup in ${BACKUP_DIR}/${BACKUP_NAME}..."
+    cp -r "${INSTALL_DIR}" "${BACKUP_DIR}/${BACKUP_NAME}"
+    
+    # Pull latest changes
+    cd "${INSTALL_DIR}"
+    if ! git pull origin main; then
+        echo "Error: Failed to pull latest changes"
+        exit 1
+    fi
+    
+    # Update dependencies
+    source "${INSTALL_DIR}/venv/bin/activate"
+    if ! pip install -r requirements.txt; then
+        echo "Error: Failed to update dependencies"
+        exit 1
+    fi
+    deactivate
+    
+    echo "Update completed successfully!"
+    echo "Backup created at: ${BACKUP_DIR}/${BACKUP_NAME}"
+}
+
+# Activate virtual environment
+source "${INSTALL_DIR}/venv/bin/activate"
+
+# Parse command line arguments
+case "$1" in
+    --update)
+        update_installation
+        exit 0
+        ;;
+    --domain)
+        if [ -z "$2" ]; then
+            echo "Error: --domain requires a domain name"
+            exit 1
+        fi
+        DOMAIN="$2"
+        shift 2
+        ;;
+    --help)
+        echo "Usage: keycloak-deploy [OPTIONS]"
+        echo
+        echo "Options:"
+        echo "  --domain DOMAIN    Domain name for Keycloak installation"
+        echo "  --email EMAIL      Email for SSL certificate"
+        echo "  --update          Update Keycloak Management System to latest version"
+        echo "  --help            Show this help message"
+        exit 0
+        ;;
+    *)
+        if [ -z "$1" ]; then
+            echo "Error: --domain is required"
+            echo "Run 'keycloak-deploy --help' for usage"
+            exit 1
+        fi
+        ;;
+esac
+
+# Execute deployment script
+python "${INSTALL_DIR}/deploy.py" "$@"
+EOF
+        
+        # Make command executable
         chmod +x /usr/local/bin/keycloak-deploy
+        
         save_state "command"
     else
         echo "Command already created, skipping..."
