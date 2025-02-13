@@ -1,0 +1,26 @@
+---
+# Prometheus self-monitoring
+- job_name: prometheus
+  static_configs:
+    - targets: ['localhost:9090']
+
+# Node exporter for system metrics
+- job_name: node
+  static_configs:
+    - targets: ['localhost:9100']
+
+# Keycloak metrics
+- job_name: keycloak
+  metrics_path: /auth/metrics
+  static_configs:
+    - targets: ['localhost:8080']
+
+# Docker metrics
+- job_name: docker
+  static_configs:
+    - targets: ['localhost:9323']
+
+# JVM metrics via JMX exporter
+- job_name: jmx
+  static_configs:
+    - targets: ['localhost:9404']

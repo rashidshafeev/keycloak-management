@@ -75,11 +75,63 @@ check_root() {
     fi
 }
 
+check_system() {
+    # Check OS
+    if ! grep -q 'Ubuntu' /etc/os-release; then
+        echo "This script is designed for Ubuntu. Other distributions may not work correctly."
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+
+    # Check minimum RAM (4GB)
+    total_ram=$(free -m | awk '/^Mem:/{print $2}')
+    if [ $total_ram -lt 4096 ]; then
+        echo "Warning: Less than 4GB RAM detected. This may impact performance."
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+
+    # Check disk space (20GB minimum)
+    free_space=$(df -BG / | awk 'NR==2 {print $4}' | sed 's/G//')
+    if [ $free_space -lt 20 ]; then
+        echo "Warning: Less than 20GB free space detected. This may be insufficient."
+        read -p "Continue anyway? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+}
+
 install_dependencies() {
     if [[ -z "${completed_steps[dependencies]}" ]]; then
         echo "Installing dependencies..."
         apt-get update
-        apt-get install -y python3-venv python3-pip git
+        apt-get install -y \
+            python3-venv \
+            python3-pip \
+            git \
+            docker.io \
+            docker-compose \
+            curl \
+            wget \
+            ufw
+
+        # Start and enable Docker
+        systemctl start docker
+        systemctl enable docker
+
+        # Add current user to docker group if not root
+        if [[ $EUID -ne 0 ]]; then
+            usermod -aG docker $USER
+        fi
+
         save_state "dependencies"
     else
         echo "Dependencies already installed, skipping..."
@@ -170,6 +222,7 @@ handle_error() {
 main() {
     setup_logging
     check_root
+    check_system
     load_state
     
     # Backup existing installation

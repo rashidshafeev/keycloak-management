@@ -1,0 +1,15 @@
+---
+# Email notification channel
+- name: Email Alerts
+  type: email
+  settings:
+    addresses: ${GRAFANA_ALERT_EMAIL}
+    singleEmail: true
+  isDefault: true
+
+# Slack notification channel
+- name: Slack Alerts
+  type: slack
+  settings:
+    url: ${GRAFANA_SLACK_WEBHOOK_URL}
+    recipient: ${GRAFANA_SLACK_CHANNEL}
