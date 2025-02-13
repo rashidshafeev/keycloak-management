@@ -161,12 +161,19 @@ setup_environment() {
         
         # Copy example environment file if not exists
         if [ ! -f "${INSTALL_DIR}/.env" ]; then
-            if [ ! -f "${INSTALL_DIR}/.env.example" ]; then
-                echo "Error: .env.example not found!"
+            # First try to find .env.example in the repository
+            if [ -f "${INSTALL_DIR}/.env.example" ]; then
+                ENV_EXAMPLE="${INSTALL_DIR}/.env.example"
+            elif [ -f "$(dirname "$0")/.env.example" ]; then
+                # If not in install dir, check script directory
+                ENV_EXAMPLE="$(dirname "$0")/.env.example"
+            else
+                echo "Error: .env.example not found in ${INSTALL_DIR} or $(dirname "$0")"
                 exit 1
             fi
             
-            cp "${INSTALL_DIR}/.env.example" "${INSTALL_DIR}/.env"
+            # Copy the found .env.example
+            cp "${ENV_EXAMPLE}" "${INSTALL_DIR}/.env"
             
             # Generate secure passwords
             KEYCLOAK_ADMIN_PASSWORD=$(openssl rand -base64 12)
@@ -178,6 +185,42 @@ setup_environment() {
             # Get system hostname for domain suggestion
             HOSTNAME=$(hostname -f)
             
+            # Prompt for required variables
+            echo "Please provide the following required information:"
+            echo "Press Enter to use the default value (shown in brackets)"
+            echo
+            
+            # SMTP Configuration
+            read -p "SMTP Host [smtp.gmail.com]: " SMTP_HOST
+            SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+            
+            read -p "SMTP Port [587]: " SMTP_PORT
+            SMTP_PORT=${SMTP_PORT:-587}
+            
+            read -p "SMTP User [alerts@example.com]: " SMTP_USER
+            SMTP_USER=${SMTP_USER:-rashidshafeev@gmail.com}
+            
+            read -p "Alert Email Address [admin@example.com]: " ALERT_EMAIL
+            ALERT_EMAIL=${ALERT_EMAIL:-rashidshafeev@gmail.com}
+            
+            # Slack Configuration
+            read -p "Use Slack notifications? (y/N): " USE_SLACK
+            if [[ $USE_SLACK =~ ^[Yy]$ ]]; then
+                read -p "Slack Webhook URL: " SLACK_WEBHOOK
+                read -p "Slack Channel [#alerts]: " SLACK_CHANNEL
+                SLACK_CHANNEL=${SLACK_CHANNEL:-#alerts}
+            else
+                SLACK_WEBHOOK=""
+                SLACK_CHANNEL="#alerts"
+            fi
+            
+            # Firewall Configuration
+            echo
+            echo "Enter allowed admin IPs (comma-separated, e.g., 192.168.1.100,10.0.0.50)"
+            echo "These IPs will have access to admin ports"
+            read -p "Admin IPs [127.0.0.1]: " ADMIN_IPS
+            ADMIN_IPS=${ADMIN_IPS:-127.0.0.1}
+            
             # Update Keycloak settings
             sed -i "s/KEYCLOAK_ADMIN=.*/KEYCLOAK_ADMIN=admin/" "${INSTALL_DIR}/.env"
             sed -i "s/KEYCLOAK_ADMIN_PASSWORD=.*/KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}/" "${INSTALL_DIR}/.env"
@@ -188,9 +231,9 @@ setup_environment() {
             sed -i "s/KEYCLOAK_VERSION=.*/KEYCLOAK_VERSION=latest/" "${INSTALL_DIR}/.env"
             sed -i "s/POSTGRES_VERSION=.*/POSTGRES_VERSION=latest/" "${INSTALL_DIR}/.env"
             
-            # Update SSL settings (will be prompted during deployment)
-            sed -i "s#SSL_CERT_PATH=.*#SSL_CERT_PATH=/etc/letsencrypt/live/${HOSTNAME}/fullchain.pem#" "${INSTALL_DIR}/.env"
-            sed -i "s#SSL_KEY_PATH=.*#SSL_KEY_PATH=/etc/letsencrypt/live/${HOSTNAME}/privkey.pem#" "${INSTALL_DIR}/.env"
+            # Update SSL settings (will be handled by deploy.py)
+            sed -i "s#SSL_CERT_PATH=.*#SSL_CERT_PATH=/etc/letsencrypt/live/\${KEYCLOAK_DOMAIN}/fullchain.pem#" "${INSTALL_DIR}/.env"
+            sed -i "s#SSL_KEY_PATH=.*#SSL_KEY_PATH=/etc/letsencrypt/live/\${KEYCLOAK_DOMAIN}/privkey.pem#" "${INSTALL_DIR}/.env"
             
             # Update Prometheus settings
             sed -i "s/PROMETHEUS_SCRAPE_INTERVAL=.*/PROMETHEUS_SCRAPE_INTERVAL=15s/" "${INSTALL_DIR}/.env"
@@ -202,18 +245,18 @@ setup_environment() {
             sed -i "s/GRAFANA_ADMIN_USER=.*/GRAFANA_ADMIN_USER=admin/" "${INSTALL_DIR}/.env"
             sed -i "s/GRAFANA_ADMIN_PASSWORD=.*/GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}/" "${INSTALL_DIR}/.env"
             
-            # Update Grafana SMTP settings (will be prompted during deployment)
+            # Update Grafana SMTP settings
             sed -i "s/GRAFANA_SMTP_ENABLED=.*/GRAFANA_SMTP_ENABLED=true/" "${INSTALL_DIR}/.env"
-            sed -i "s/GRAFANA_SMTP_HOST=.*/GRAFANA_SMTP_HOST=smtp.example.com/" "${INSTALL_DIR}/.env"
-            sed -i "s/GRAFANA_SMTP_PORT=.*/GRAFANA_SMTP_PORT=587/" "${INSTALL_DIR}/.env"
-            sed -i "s/GRAFANA_SMTP_USER=.*/GRAFANA_SMTP_USER=alerts@example.com/" "${INSTALL_DIR}/.env"
+            sed -i "s/GRAFANA_SMTP_HOST=.*/GRAFANA_SMTP_HOST=${SMTP_HOST}/" "${INSTALL_DIR}/.env"
+            sed -i "s/GRAFANA_SMTP_PORT=.*/GRAFANA_SMTP_PORT=${SMTP_PORT}/" "${INSTALL_DIR}/.env"
+            sed -i "s/GRAFANA_SMTP_USER=.*/GRAFANA_SMTP_USER=${SMTP_USER}/" "${INSTALL_DIR}/.env"
             sed -i "s/GRAFANA_SMTP_PASSWORD=.*/GRAFANA_SMTP_PASSWORD=${GRAFANA_SMTP_PASSWORD}/" "${INSTALL_DIR}/.env"
-            sed -i "s/GRAFANA_SMTP_FROM=.*/GRAFANA_SMTP_FROM=alerts@example.com/" "${INSTALL_DIR}/.env"
+            sed -i "s/GRAFANA_SMTP_FROM=.*/GRAFANA_SMTP_FROM=${SMTP_USER}/" "${INSTALL_DIR}/.env"
             
             # Update Grafana alert settings
-            sed -i "s/GRAFANA_ALERT_EMAIL=.*/GRAFANA_ALERT_EMAIL=admin@example.com/" "${INSTALL_DIR}/.env"
-            sed -i "s#GRAFANA_SLACK_WEBHOOK_URL=.*#GRAFANA_SLACK_WEBHOOK_URL=#" "${INSTALL_DIR}/.env"
-            sed -i "s/GRAFANA_SLACK_CHANNEL=.*/GRAFANA_SLACK_CHANNEL=#alerts/" "${INSTALL_DIR}/.env"
+            sed -i "s/GRAFANA_ALERT_EMAIL=.*/GRAFANA_ALERT_EMAIL=${ALERT_EMAIL}/" "${INSTALL_DIR}/.env"
+            sed -i "s#GRAFANA_SLACK_WEBHOOK_URL=.*#GRAFANA_SLACK_WEBHOOK_URL=${SLACK_WEBHOOK}#" "${INSTALL_DIR}/.env"
+            sed -i "s/GRAFANA_SLACK_CHANNEL=.*/GRAFANA_SLACK_CHANNEL=${SLACK_CHANNEL}/" "${INSTALL_DIR}/.env"
             
             # Update Wazuh settings
             sed -i "s/WAZUH_MANAGER_IP=.*/WAZUH_MANAGER_IP=localhost/" "${INSTALL_DIR}/.env"
@@ -223,7 +266,7 @@ setup_environment() {
             # Update Firewall settings
             sed -i "s/FIREWALL_MAX_BACKUPS=.*/FIREWALL_MAX_BACKUPS=5/" "${INSTALL_DIR}/.env"
             sed -i "s/FIREWALL_ALLOWED_PORTS=.*/FIREWALL_ALLOWED_PORTS=22,80,443,8080,8443,3000,9090,9100,9323/" "${INSTALL_DIR}/.env"
-            sed -i "s/FIREWALL_ADMIN_IPS=.*/FIREWALL_ADMIN_IPS=127.0.0.1/" "${INSTALL_DIR}/.env"
+            sed -i "s/FIREWALL_ADMIN_IPS=.*/FIREWALL_ADMIN_IPS=${ADMIN_IPS}/" "${INSTALL_DIR}/.env"
             
             # Update Backup settings
             sed -i "s#BACKUP_STORAGE_PATH=.*#BACKUP_STORAGE_PATH=/opt/fawz/backup#" "${INSTALL_DIR}/.env"
@@ -235,6 +278,7 @@ setup_environment() {
             sed -i "s/LOG_MAX_SIZE=.*/LOG_MAX_SIZE=100MB/" "${INSTALL_DIR}/.env"
             sed -i "s/LOG_MAX_FILES=.*/LOG_MAX_FILES=10/" "${INSTALL_DIR}/.env"
             
+            echo
             echo "Environment file created with secure defaults."
             echo
             echo "IMPORTANT: Your generated passwords are:"
@@ -244,21 +288,19 @@ setup_environment() {
             echo "Wazuh Registration Password: ${WAZUH_REGISTRATION_PASSWORD}"
             echo "Please save these passwords in a secure location!"
             echo
-            echo "The following settings will need to be configured during deployment:"
-            echo "1. SSL certificate paths (if using HTTPS)"
-            echo "2. SMTP settings (if using email alerts)"
-            echo "3. Slack webhook URL (if using Slack notifications)"
-            echo "4. Firewall admin IPs"
-            echo
-            echo "Review and modify the environment file if needed:"
-            echo "nano ${INSTALL_DIR}/.env"
-            
-            # Ask user if they want to edit the file
-            read -p "Would you like to edit the environment file now? (y/N) " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                ${EDITOR:-nano} "${INSTALL_DIR}/.env"
+            echo "Configuration Summary:"
+            echo "SMTP Host: ${SMTP_HOST}"
+            echo "SMTP Port: ${SMTP_PORT}"
+            echo "SMTP User: ${SMTP_USER}"
+            echo "Alert Email: ${ALERT_EMAIL}"
+            echo "Slack Notifications: ${USE_SLACK}"
+            if [[ $USE_SLACK =~ ^[Yy]$ ]]; then
+                echo "Slack Channel: ${SLACK_CHANNEL}"
             fi
+            echo "Admin IPs: ${ADMIN_IPS}"
+            echo
+            echo "You can modify these settings later by editing:"
+            echo "${INSTALL_DIR}/.env"
         else
             echo "Environment file already exists, skipping..."
         fi
