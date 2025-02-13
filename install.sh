@@ -343,28 +343,26 @@ setup_virtualenv() {
         # Upgrade pip and setuptools
         python -m pip install --upgrade pip setuptools wheel
         
-        # Install dependencies with retries and better error handling
+        # Install dependencies in specific order
         echo "Installing Python dependencies..."
-        MAX_RETRIES=3
-        RETRY_COUNT=0
         
-        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if pip install -r requirements.txt; then
-                break
-            fi
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-                echo "Error: Failed to install dependencies after $MAX_RETRIES attempts"
-                deactivate
-                exit 1
-            fi
-            echo "Retrying dependency installation (attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES)..."
-            sleep 2
-        done
+        # First install core dependencies that others depend on
+        pip install "PyYAML==5.3.1" "jsonschema==3.2.0" || {
+            echo "Error: Failed to install core dependencies"
+            deactivate
+            exit 1
+        }
+        
+        # Then install the rest
+        if ! pip install -r requirements.txt; then
+            echo "Error: Failed to install remaining dependencies"
+            deactivate
+            exit 1
+        fi
         
         # Verify critical dependencies
         echo "Verifying dependencies..."
-        if ! python -c "import click, yaml, docker, requests" &> /dev/null; then
+        if ! python -c "import click, yaml, docker, requests, jsonschema" &> /dev/null; then
             echo "Error: Critical dependencies not installed properly"
             deactivate
             exit 1
