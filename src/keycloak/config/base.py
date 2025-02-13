@@ -6,15 +6,12 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Set
 import click
 from .yaml_loader import YamlConfigLoader
+from .validation import ValidationError
 import json
 import os
 
 class ConfigurationError(Exception):
     """Base class for configuration errors"""
-    pass
-
-class ValidationError(ConfigurationError):
-    """Raised when configuration validation fails"""
     pass
 
 class RollbackError(ConfigurationError):
