@@ -141,14 +141,26 @@ install_dependencies() {
 clone_repository() {
     if [[ -z "${completed_steps[repository]}" ]]; then
         echo "Setting up repository..."
-        mkdir -p "$INSTALL_DIR"
-        cd "$INSTALL_DIR"
         
+        # Create installation directory
+        mkdir -p "${INSTALL_DIR}"
+        
+        # Clone repository
         if [ ! -d "${INSTALL_DIR}/.git" ]; then
-            git clone "$REPO_URL" .
+            if ! git clone "${REPO_URL}" "${INSTALL_DIR}"; then
+                echo "Error: Failed to clone repository"
+                exit 1
+            fi
+            
+            # Configure git to trust this directory
+            if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
+                echo "Configuring git to trust ${INSTALL_DIR}..."
+                git config --global --add safe.directory "${INSTALL_DIR}"
+            fi
         else
-            git pull
+            echo "Repository already exists, skipping clone..."
         fi
+        
         save_state "repository"
     else
         echo "Repository already set up, skipping..."
@@ -346,6 +358,12 @@ update_installation() {
     
     echo "Creating backup in ${BACKUP_DIR}/${BACKUP_NAME}..."
     cp -r "${INSTALL_DIR}" "${BACKUP_DIR}/${BACKUP_NAME}"
+    
+    # Configure git to trust this directory
+    if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
+        echo "Configuring git to trust ${INSTALL_DIR}..."
+        git config --global --add safe.directory "${INSTALL_DIR}"
+    fi
     
     # Pull latest changes
     cd "${INSTALL_DIR}"

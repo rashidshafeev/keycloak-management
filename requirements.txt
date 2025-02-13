@@ -1,10 +1,33 @@
 # requirements.txt
-pyyaml>=6.0
-jinja2>=3.0
-python-dotenv>=1.0
-paramiko>=3.4
-requests>=2.31
-docker>=7.0
-click>=8.0
-pyOpenSSL==23.3.0
+# Core dependencies
+click>=8.0.0
+PyYAML>=6.0.0
+python-dotenv>=1.0.0
 jsonschema>=4.20.0
+pyOpenSSL==23.3.0
+
+# Docker management
+docker>=7.0.0
+docker-compose>=1.29.0
+
+# HTTP and API
+requests>=2.31.0
+urllib3>=2.0.0
+
+# System utilities
+psutil>=5.9.0
+python-iptables>=1.0.0
+
+# Monitoring
+prometheus-client>=0.17.0
+grafana-api>=1.0.0
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Testing and development
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
