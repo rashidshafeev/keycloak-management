@@ -347,13 +347,25 @@ setup_virtualenv() {
         echo "Installing Python dependencies..."
         
         # First install core dependencies that others depend on
-        pip install "PyYAML==5.3.1" "jsonschema==3.2.0" || {
+        pip install \
+            "PyYAML==5.3.1" \
+            "jsonschema==3.2.0" \
+            "python-dotenv==0.21.1" \
+            "requests==2.31.0" \
+            "urllib3==2.0.0" || {
             echo "Error: Failed to install core dependencies"
             deactivate
             exit 1
         }
         
-        # Then install the rest
+        # Then install docker and docker-compose
+        pip install "docker==7.0.0" "docker-compose==1.29.2" || {
+            echo "Error: Failed to install Docker dependencies"
+            deactivate
+            exit 1
+        }
+        
+        # Finally install the rest
         if ! pip install -r requirements.txt; then
             echo "Error: Failed to install remaining dependencies"
             deactivate
@@ -362,7 +374,7 @@ setup_virtualenv() {
         
         # Verify critical dependencies
         echo "Verifying dependencies..."
-        if ! python -c "import click, yaml, docker, requests, jsonschema" &> /dev/null; then
+        if ! python -c "import click, yaml, docker, requests, jsonschema, dotenv" &> /dev/null; then
             echo "Error: Critical dependencies not installed properly"
             deactivate
             exit 1
