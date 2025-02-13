@@ -1,16 +1,18 @@
-from pathlib import Path
+import json
 import logging
+import os
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Generator, ContextManager
+from contextlib import contextmanager
 from ..utils.logger import setup_logging
 from ..system.prepare import SystemPreparationStep
 from ..system.docker import DockerSetupStep
-from ..system.firewall import FirewallManager
 from ..security.ssl import CertificateManager
 from ..monitoring.prometheus import PrometheusManager
 from ..keycloak.deploy import KeycloakDeploymentStep
-from ..keycloak.config.configuration import KeycloakConfigurationManager  # Fixed class name
+from ..keycloak.config.configuration import KeycloakConfigurationManager
 from .database_backup import DatabaseBackupStep
 from .base import DeploymentStep
-import json
 
 class DeploymentOrchestrator:
     def __init__(self, config_path: Path):
@@ -18,7 +20,6 @@ class DeploymentOrchestrator:
         self.logger = logging.getLogger("keycloak_deployer")
         self.steps = [
             SystemPreparationStep(),
-            FirewallManager(self.config),
             DockerSetupStep(),
             CertificateManager(self.config),
             KeycloakDeploymentStep(self.config),
