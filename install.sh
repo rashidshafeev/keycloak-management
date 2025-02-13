@@ -453,7 +453,11 @@ esac
 cd "${INSTALL_DIR}"
 
 # Execute deployment script with all arguments
-python deploy.py "$@"
+if [ -n "$2" ] && [ -n "$3" ] && [ "$3" = "--email" ] && [ -n "$4" ]; then
+    python deploy.py --domain "$2" --email "$4"
+else
+    python deploy.py "$@"
+fi
 
 # Deactivate virtual environment
 deactivate
