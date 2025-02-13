@@ -325,12 +325,39 @@ setup_environment() {
 
 setup_virtualenv() {
     if [[ -z "${completed_steps[virtualenv]}" ]]; then
-        echo "Setting up virtual environment..."
-        cd "$INSTALL_DIR"
-        python3 -m venv "$VENV_DIR"
-        source "${VENV_DIR}/bin/activate"
-        pip install --upgrade pip
-        pip install -r requirements.txt
+        echo "Setting up Python virtual environment..."
+        
+        # Install python3-venv if not present
+        if ! command -v python3 -m venv &> /dev/null; then
+            apt-get update
+            apt-get install -y python3-venv
+        fi
+        
+        # Create and activate virtual environment
+        cd "${INSTALL_DIR}"
+        python3 -m venv venv
+        source "${INSTALL_DIR}/venv/bin/activate"
+        
+        # Upgrade pip
+        python -m pip install --upgrade pip
+        
+        # Install dependencies with error handling
+        echo "Installing Python dependencies..."
+        if ! pip install -r requirements.txt; then
+            echo "Error: Failed to install dependencies"
+            deactivate
+            exit 1
+        fi
+        
+        # Verify critical dependencies
+        echo "Verifying dependencies..."
+        if ! python -c "import click, docker, requests" &> /dev/null; then
+            echo "Error: Critical dependencies not installed properly"
+            deactivate
+            exit 1
+        fi
+        
+        deactivate
         save_state "virtualenv"
     else
         echo "Virtual environment already set up, skipping..."
@@ -346,53 +373,33 @@ create_command() {
 #!/bin/bash
 
 INSTALL_DIR="/opt/fawz/keycloak"
-REPO_URL="https://git.rashidshafeev.ru/rashidshafeev/keycloak-management.git"
 
-update_installation() {
-    echo "Updating Keycloak Management System..."
-    
-    # Create backup of current installation
-    BACKUP_DIR="/opt/fawz/backup"
-    BACKUP_NAME="keycloak_backup_$(date +%Y%m%d_%H%M%S)"
-    mkdir -p "${BACKUP_DIR}"
-    
-    echo "Creating backup in ${BACKUP_DIR}/${BACKUP_NAME}..."
-    cp -r "${INSTALL_DIR}" "${BACKUP_DIR}/${BACKUP_NAME}"
-    
-    # Configure git to trust this directory
-    if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
-        echo "Configuring git to trust ${INSTALL_DIR}..."
-        git config --global --add safe.directory "${INSTALL_DIR}"
-    fi
-    
-    # Pull latest changes
-    cd "${INSTALL_DIR}"
-    if ! git pull origin main; then
-        echo "Error: Failed to pull latest changes"
+# Check if virtual environment exists and dependencies are installed
+check_dependencies() {
+    if [ ! -f "${INSTALL_DIR}/venv/bin/activate" ]; then
+        echo "Error: Virtual environment not found. Please run the installation script first."
         exit 1
     fi
     
-    # Update dependencies
     source "${INSTALL_DIR}/venv/bin/activate"
-    if ! pip install -r requirements.txt; then
-        echo "Error: Failed to update dependencies"
+    
+    echo "Verifying dependencies..."
+    if ! python -c "import click, docker, requests" &> /dev/null; then
+        echo "Error: Critical dependencies missing. Please run the installation script to fix."
+        deactivate
         exit 1
     fi
     deactivate
-    
-    echo "Update completed successfully!"
-    echo "Backup created at: ${BACKUP_DIR}/${BACKUP_NAME}"
 }
 
-# Activate virtual environment
+# Check dependencies first
+check_dependencies
+
+# Activate virtual environment with full path
 source "${INSTALL_DIR}/venv/bin/activate"
 
 # Parse command line arguments
 case "$1" in
-    --update)
-        update_installation
-        exit 0
-        ;;
     --domain)
         if [ -z "$2" ]; then
             echo "Error: --domain requires a domain name"
@@ -407,7 +414,6 @@ case "$1" in
         echo "Options:"
         echo "  --domain DOMAIN    Domain name for Keycloak installation"
         echo "  --email EMAIL      Email for SSL certificate"
-        echo "  --update          Update Keycloak Management System to latest version"
         echo "  --help            Show this help message"
         exit 0
         ;;
@@ -420,8 +426,15 @@ case "$1" in
         ;;
 esac
 
-# Execute deployment script
-python "${INSTALL_DIR}/deploy.py" "$@"
+# Change to installation directory
+cd "${INSTALL_DIR}"
+
+# Execute deployment script with all arguments
+python deploy.py "$@"
+
+# Deactivate virtual environment
+deactivate
+
 EOF
         
         # Make command executable
@@ -431,6 +444,50 @@ EOF
     else
         echo "Command already created, skipping..."
     fi
+}
+
+reset_installation() {
+    echo "WARNING: This will remove all Keycloak components and configuration."
+    echo "This includes:"
+    echo "  - Docker containers and volumes"
+    echo "  - Installation directory"
+    echo "  - Configuration files"
+    echo "  - SSL certificates"
+    echo "  - Firewall rules"
+    echo "  - Database data"
+    read -p "Are you sure you want to continue? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Reset cancelled."
+        exit 1
+    fi
+
+    echo "Stopping and removing Docker containers..."
+    if command -v docker &> /dev/null; then
+        docker-compose -f "${INSTALL_DIR}/docker-compose.yml" down -v || true
+        docker system prune -f || true
+    fi
+
+    echo "Removing Keycloak firewall rules..."
+    if command -v ufw &> /dev/null; then
+        ufw delete allow 8080/tcp || true
+        ufw delete allow 8443/tcp || true
+        ufw delete allow 9090/tcp || true  # Prometheus
+        ufw delete allow 3000/tcp || true  # Grafana
+    fi
+
+    echo "Removing installation directory..."
+    rm -rf "${INSTALL_DIR}"
+    rm -rf "/opt/fawz/backup"
+
+    echo "Removing keycloak-deploy command..."
+    rm -f /usr/local/bin/keycloak-deploy
+
+    echo "Removing state file..."
+    rm -f "${STATE_FILE}"
+
+    echo "Reset completed. You can now run the installation script again."
+    exit 0
 }
 
 # Error handling
@@ -494,6 +551,11 @@ main() {
     
     trap 'handle_error "command"' ERR
     create_command
+    
+    # Reset installation if requested
+    if [[ "$1" == "--reset" ]]; then
+        reset_installation
+    fi
     
     # Reset error handling
     trap - ERR

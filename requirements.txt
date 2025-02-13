@@ -1,14 +1,15 @@
 # requirements.txt
 # Core dependencies
 click>=8.0.0
-PyYAML>=6.0.0
+PyYAML<6,>=3.10  # Required by docker-compose
 python-dotenv>=1.0.0
 jsonschema>=4.20.0
 pyOpenSSL==23.3.0
+cryptography>=41.0.5,<42.0.0
 
 # Docker management
 docker>=7.0.0
-docker-compose>=1.29.0
+docker-compose>=1.29.0,<1.30.0
 
 # HTTP and API
 requests>=2.31.0
@@ -24,10 +25,3 @@ grafana-api>=1.0.0
 
 # Database
 psycopg2-binary>=2.9.0
-
-# Testing and development
-pytest>=7.0.0
-pytest-cov>=4.0.0
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.0.0
