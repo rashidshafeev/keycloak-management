@@ -112,17 +112,25 @@ check_system() {
 install_dependencies() {
     if [[ -z "${completed_steps[dependencies]}" ]]; then
         echo "Installing dependencies..."
+        
+        # Update package lists
         apt-get update
+        
+        # Install system dependencies
         apt-get install -y \
             python3-venv \
             python3-pip \
+            python3-dev \
+            build-essential \
+            libssl-dev \
+            libffi-dev \
             git \
             docker.io \
             docker-compose \
             curl \
             wget \
             ufw
-
+        
         # Start and enable Docker
         systemctl start docker
         systemctl enable docker
@@ -327,21 +335,18 @@ setup_virtualenv() {
     if [[ -z "${completed_steps[virtualenv]}" ]]; then
         echo "Setting up Python virtual environment..."
         
-        # Install python3-venv if not present
-        if ! command -v python3 -m venv &> /dev/null; then
-            apt-get update
-            apt-get install -y python3-venv
-        fi
-        
         # Create and activate virtual environment
         cd "${INSTALL_DIR}"
         python3 -m venv venv
         source "${INSTALL_DIR}/venv/bin/activate"
         
-        # Upgrade pip
-        python -m pip install --upgrade pip
+        # Upgrade pip and setuptools
+        python -m pip install --upgrade pip setuptools wheel
         
-        # Install dependencies with error handling
+        # Install PyYAML first using binary wheel
+        pip install --only-binary :all: "PyYAML<6,>=3.10"
+        
+        # Install remaining dependencies
         echo "Installing Python dependencies..."
         if ! pip install -r requirements.txt; then
             echo "Error: Failed to install dependencies"
@@ -462,31 +467,25 @@ reset_installation() {
         exit 1
     fi
 
-    echo "Stopping and removing Docker containers..."
-    if command -v docker &> /dev/null; then
-        docker-compose -f "${INSTALL_DIR}/docker-compose.yml" down -v || true
-        docker system prune -f || true
-    fi
+    echo "Performing reset..."
+    
+    # Stop and remove Docker containers without checking command existence
+    docker-compose -f "${INSTALL_DIR}/docker-compose.yml" down -v 2>/dev/null || true
+    docker system prune -f 2>/dev/null || true
 
-    echo "Removing Keycloak firewall rules..."
-    if command -v ufw &> /dev/null; then
-        ufw delete allow 8080/tcp || true
-        ufw delete allow 8443/tcp || true
-        ufw delete allow 9090/tcp || true  # Prometheus
-        ufw delete allow 3000/tcp || true  # Grafana
-    fi
+    # Remove firewall rules without checking command existence
+    ufw delete allow 8080/tcp 2>/dev/null || true
+    ufw delete allow 8443/tcp 2>/dev/null || true
+    ufw delete allow 9090/tcp 2>/dev/null || true
+    ufw delete allow 3000/tcp 2>/dev/null || true
 
-    echo "Removing installation directory..."
-    rm -rf "${INSTALL_DIR}"
-    rm -rf "/opt/fawz/backup"
+    # Remove all directories and files
+    rm -rf "${INSTALL_DIR}" 2>/dev/null || true
+    rm -rf "/opt/fawz/backup" 2>/dev/null || true
+    rm -f /usr/local/bin/keycloak-deploy 2>/dev/null || true
+    rm -f "${STATE_FILE}" 2>/dev/null || true
 
-    echo "Removing keycloak-deploy command..."
-    rm -f /usr/local/bin/keycloak-deploy
-
-    echo "Removing state file..."
-    rm -f "${STATE_FILE}"
-
-    echo "Reset completed. You can now run the installation script again."
+    echo "Reset completed successfully."
     exit 0
 }
 
@@ -528,6 +527,10 @@ handle_error() {
 
 # Main execution
 main() {
+    if [[ "$1" == "--reset" ]]; then
+        reset_installation
+    fi
+
     setup_logging
     check_root
     check_system
@@ -551,11 +554,6 @@ main() {
     
     trap 'handle_error "command"' ERR
     create_command
-    
-    # Reset installation if requested
-    if [[ "$1" == "--reset" ]]; then
-        reset_installation
-    fi
     
     # Reset error handling
     trap - ERR

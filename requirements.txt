@@ -1,7 +1,6 @@
 # requirements.txt
 # Core dependencies
 click>=8.0.0
-PyYAML<6,>=3.10  # Required by docker-compose
 python-dotenv>=1.0.0
 jsonschema>=4.20.0
 pyOpenSSL==23.3.0
