@@ -8,7 +8,7 @@ from .realm import RealmConfigStep
 from .events import EventConfigStep
 from .security import SecurityConfigStep
 from .clients import ClientConfigStep
-from .roles import RoleConfigStep
+from .roles import RolesConfigStep
 from .authentication import AuthenticationConfigStep
 from .monitoring import MonitoringConfigStep
 from .themes import ThemeConfigStep
@@ -20,11 +20,11 @@ class ConfigStep:
     """Base class for configuration steps"""
     name: str
     description: str
-    required: bool = True
+    schema_file: Optional[str] = None
     dependencies: list[str] = None
-    schema_file: str = None
+    required: bool = True
 
-class ConfigurationManager:
+class KeycloakConfigurationManager:
     """Manages Keycloak configuration using YAML templates"""
     
     def __init__(self, config_dir: Optional[Path] = None):
@@ -91,7 +91,7 @@ class ConfigurationManager:
             "realm": RealmConfigStep,
             "security": SecurityConfigStep,
             "clients": ClientConfigStep,
-            "roles": RoleConfigStep,
+            "roles": RolesConfigStep,
             "authentication": AuthenticationConfigStep,
             "events": EventConfigStep,
             "monitoring": MonitoringConfigStep,

@@ -7,7 +7,7 @@ from ..system.firewall import FirewallManager
 from ..security.ssl import CertificateManager
 from ..monitoring.prometheus import PrometheusManager
 from ..keycloak.deploy import KeycloakDeploymentStep
-from ..keycloak.config.configuration import KeycloakConfigurationManager
+from ..keycloak.config.configuration import KeycloakConfigurationManager  # Fixed class name
 from .database_backup import DatabaseBackupStep
 from .base import DeploymentStep
 import json
