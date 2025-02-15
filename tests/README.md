@@ -24,9 +24,13 @@ tests/
 │   ├── realms/               # Realm configurations
 │   ├── clients/              # Client configurations
 │   └── users/                # Test user data
-└── scripts/                  # Test utilities
-    ├── setup_test_env.sh     # Environment setup
-    └── cleanup_test_env.sh   # Environment cleanup
+├── scripts/                  # Test utilities
+│   ├── setup_test_env.sh     # Environment setup
+│   └── cleanup_test_env.sh   # Environment cleanup
+└── deployment/               # Deployment testing
+    ├── Dockerfile.test        # Dockerfile for deployment testing
+    ├── test-entrypoint.sh     # Handles Docker daemon startup inside the test container
+    └── run-test-env.sh        # Script to build and run the test environment
 ```
 
 ### 3. Running Tests
@@ -138,6 +142,32 @@ coverage html  # For detailed HTML report
 ./tests/scripts/cleanup_test_env.sh
 ```
 
+## Deployment Testing
+
+### 4. Deployment Testing
+The `deployment/` directory contains tools for testing the full deployment process in an isolated environment:
+
+- `Dockerfile.test`: Creates an Ubuntu-based container for deployment testing
+- `test-entrypoint.sh`: Handles Docker daemon startup inside the test container
+- `run-test-env.sh`: Script to build and run the test environment
+
+To run deployment tests:
+```bash
+# Navigate to the deployment test directory
+cd tests/deployment
+
+# Build and start the test environment
+./run-test-env.sh
+
+# Enter the test container
+docker exec -it keycloak-test-env bash
+
+# Inside the container, run the deployment
+python3 deploy.py --domain test.local --email test@example.com --config test-config.yaml
+```
+
+The deployment test environment uses Docker-in-Docker (DinD) to allow testing the full deployment process in an isolated container.
+
 ## Test Configuration Example
 
 ```yaml
@@ -167,4 +197,3 @@ events:
   storage:
     type: "database"
     retention: "30d"
-```
