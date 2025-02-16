@@ -1,27 +1,34 @@
-FROM ubuntu:22.04
+# Use the official Docker-in-Docker image
+FROM docker:dind
 
-# Install required packages
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    docker.io \
+# Install basic dependencies
+RUN apk add --no-cache \
+    bash \
+    sudo \
     curl \
+    wget \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    python3 \
+    py3-pip \
+    ca-certificates \
+    gnupg \
+    docker-cli \
+    docker-compose
 
-# Install Python dependencies
-COPY requirements.txt /app/requirements.txt
+# Create required directories
+RUN mkdir -p /var/log /var/run /etc/docker
+
+# Configure Docker daemon
+RUN echo '{"debug": true, "log-level": "debug"}' > /etc/docker/daemon.json
+
+# Create app directory and make it the working directory
 WORKDIR /app
-RUN pip3 install -r requirements.txt
 
-# Copy deployment code
-COPY . /app/
+# Copy repository contents
+COPY . .
 
-# Set up Docker-in-Docker
-VOLUME /var/lib/docker
+# Make scripts executable
+RUN chmod +x install.sh tests/deployment/test-entrypoint.sh
 
-# Entry point script
-COPY test-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/test-entrypoint.sh
-
-ENTRYPOINT ["test-entrypoint.sh"]
+# Set entrypoint with Docker daemon startup
+ENTRYPOINT ["dockerd-entrypoint.sh", "./tests/deployment/test-entrypoint.sh"]

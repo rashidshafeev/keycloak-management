@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  keycloak-test:
+    build:
+      context: ../..
+      dockerfile: tests/deployment/Dockerfile.test
+    privileged: true  # Needed for Docker-in-Docker
+    environment:
+      - INSTALL_DIR=/opt/fawz/keycloak
+      - KEYCLOAK_DOMAIN=localhost
+      - ADMIN_EMAIL=test@localhost
+      - VENV_DIR=/opt/fawz/keycloak/venv
+      - LOG_FILE=/var/log/keycloak-install.log
+      - BACKUP_DIR=/opt/fawz/backup
+      - STATE_FILE=/opt/fawz/.install_state
+      - GIT_USERNAME=${GIT_USERNAME:-}
+      - GIT_PASSWORD=${GIT_PASSWORD:-}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "18080:8080"  # HTTP
+      - "18443:8443"  # HTTPS
+      - "13000:3000"  # Grafana
+      - "19090:9090"  # Prometheus
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=keycloak
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  test_runner:
+    build:
+      context: ../..
+      dockerfile: tests/deployment/Dockerfile.test
+    privileged: true  # Needed for Docker-in-Docker
+    environment:
+      - DOCKER_TLS_CERTDIR=""  # Disable TLS for simplicity in testing
+      - INSTALL_DIR=/opt/fawz/keycloak
+      - KEYCLOAK_DOMAIN=localhost
+      - ADMIN_EMAIL=test@localhost
+      - VENV_DIR=/opt/fawz/keycloak/venv
+      - LOG_FILE=/var/log/keycloak-install.log
+      - BACKUP_DIR=/opt/fawz/backup
+      - STATE_FILE=/opt/fawz/.install_state
+      - GIT_USERNAME=${GIT_USERNAME:-}
+      - GIT_PASSWORD=${GIT_PASSWORD:-}
+    tmpfs:
+      - /tmp
+      - /run
+      - /run/lock
+    volumes:
+      - /var/lib/docker
+    ports:
+      - "18080:8080"  # HTTP
+      - "18443:8443"  # HTTPS
+      - "13000:3000"  # Grafana
+      - "19090:9090"  # Prometheus
+    depends_on:
+      - keycloak-test
+      - postgres
+
+volumes:
+  postgres_test_data:
