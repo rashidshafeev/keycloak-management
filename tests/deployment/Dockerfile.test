@@ -1,34 +1,55 @@
-# Use the official Docker-in-Docker image
-FROM docker:dind
+FROM debian:bullseye-slim
 
-# Install basic dependencies
-RUN apk add --no-cache \
-    bash \
-    sudo \
+# Install basic dependencies and Docker prerequisites
+RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
     curl \
-    wget \
+    gnupg \
+    lsb-release \
+    sudo \
     git \
     python3 \
-    py3-pip \
-    ca-certificates \
-    gnupg \
-    docker-cli \
-    docker-compose
+    python3-pip \
+    wget \
+    systemd \
+    systemd-sysv \
+    dos2unix \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create required directories
-RUN mkdir -p /var/log /var/run /etc/docker
+# Add Docker's official GPG key
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-# Configure Docker daemon
-RUN echo '{"debug": true, "log-level": "debug"}' > /etc/docker/daemon.json
+# Set up Docker repository
+RUN echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Create app directory and make it the working directory
-WORKDIR /app
+# Install Docker and docker-compose
+RUN apt-get update && apt-get install -y \
+    docker-ce \
+    docker-ce-cli \
+    containerd.io \
+    docker-compose \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy repository contents
-COPY . .
+# Configure git credentials helper
+RUN git config --global credential.helper store
 
-# Make scripts executable
-RUN chmod +x install.sh tests/deployment/test-entrypoint.sh
+# Clean up systemd
+RUN cd /lib/systemd/system/sysinit.target.wants/ \
+    && rm $(ls | grep -v systemd-tmpfiles-setup)
 
-# Set entrypoint with Docker daemon startup
-ENTRYPOINT ["dockerd-entrypoint.sh", "./tests/deployment/test-entrypoint.sh"]
+RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
+    /etc/systemd/system/*.wants/* \
+    /lib/systemd/system/local-fs.target.wants/* \
+    /lib/systemd/system/sockets.target.wants/*udev* \
+    /lib/systemd/system/sockets.target.wants/*initctl* \
+    /lib/systemd/system/basic.target.wants/* \
+    /lib/systemd/system/anaconda.target.wants/* \
+    /lib/systemd/system/plymouth* \
+    /lib/systemd/system/systemd-update-utmp*
+
+VOLUME [ "/sys/fs/cgroup" ]
+
+CMD ["/lib/systemd/systemd"]

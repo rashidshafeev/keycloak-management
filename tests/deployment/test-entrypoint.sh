@@ -5,6 +5,24 @@ set -x  # Enable debug mode
 # Configure passwordless sudo for root
 echo "root ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/root
 
+# Configure Git credentials if provided
+if [ ! -z "$GIT_USERNAME" ] && [ ! -z "$GIT_PASSWORD" ]; then
+    echo "Configuring Git credentials..."
+    git config --global credential.helper store
+    echo "https://${GIT_USERNAME}:${GIT_PASSWORD}@git.rashidshafeev.ru" > ~/.git-credentials
+    chmod 600 ~/.git-credentials
+fi
+
+# Start Docker daemon
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl start docker
+else
+    service docker start || {
+        echo "Failed to start Docker service"
+        exit 1
+    }
+fi
+
 # Wait for Docker to be ready
 echo "Waiting for Docker daemon to be ready..."
 TIMEOUT=60
@@ -12,8 +30,13 @@ COUNTER=0
 while ! docker info > /dev/null 2>&1; do
     if [ $COUNTER -ge $TIMEOUT ]; then
         echo "Timeout waiting for Docker daemon"
-        echo "Docker daemon log:"
-        cat /var/log/dockerd.log
+        echo "Docker daemon status:"
+        if command -v systemctl >/dev/null 2>&1; then
+            systemctl status docker
+            journalctl -xe
+        else
+            service docker status
+        fi
         exit 1
     fi
     sleep 1
@@ -21,87 +44,68 @@ while ! docker info > /dev/null 2>&1; do
 done
 echo "Docker daemon is ready"
 
-# Set minimal test environment variables
-export KEYCLOAK_DOMAIN="localhost"
-export ADMIN_EMAIL="test@localhost"
-export INSTALL_DIR="/opt/fawz/keycloak"
-export REPO_DIR="/app"
-
-# Set git credentials if provided
-if [ ! -z "$GIT_USERNAME" ] && [ ! -z "$GIT_PASSWORD" ]; then
-    echo "Configuring git credentials..."
-    git config --global credential.helper store
-    echo "https://${GIT_USERNAME}:${GIT_PASSWORD}@git.rashidshafeev.ru" > ~/.git-credentials
-fi
-
-# Configure git
-git config --global --add safe.directory "${REPO_DIR}"
-git config --global --add safe.directory "${INSTALL_DIR}"
-
-# Initialize git repo in /app if it's not already a repo
-if [ ! -d "${REPO_DIR}/.git" ]; then
-    cd "${REPO_DIR}"
-    git init
-    git remote add origin "https://git.rashidshafeev.ru/rashidshafeev/keycloak-management.git"
-    git fetch
-    git checkout -f main
-fi
-
 echo "=== Starting Tests ==="
 
-# Test 1: Fresh Installation
-echo "Test 1: Fresh installation with domain and email"
-cd "${REPO_DIR}"
-
-# Clean up any previous installation
-sudo rm -rf "${INSTALL_DIR}"
-sudo mkdir -p "${INSTALL_DIR}"
-
-# Copy current repository to install directory
-sudo cp -r "${REPO_DIR}/." "${INSTALL_DIR}/"
-
-# Run installation
-cd "${INSTALL_DIR}"
-sudo ./install.sh --domain "${KEYCLOAK_DOMAIN}" --email "${ADMIN_EMAIL}" --no-clone
+# Test 1: Clone the repository (simulating git clone on VPS)
+echo "Test 1: Cloning repository to /opt/fawz/keycloak"
+mkdir -p /opt/fawz/keycloak
+git clone https://git.rashidshafeev.ru/rashidshafeev/keycloak-management.git /opt/fawz/keycloak
 if [ $? -ne 0 ]; then
-    echo "Test 1 failed: Installation failed"
+    echo "Test 1 failed: Repository clone failed"
+    exit 1
+fi
+
+# Test 2: Run installation
+echo "Test 2: Running fresh installation"
+cd /opt/fawz/keycloak
+./install.sh --domain localhost --email test@localhost --no-clone
+if [ $? -ne 0 ]; then
+    echo "Test 2 failed: Installation failed"
     echo "Installation log:"
     cat /var/log/keycloak-install.log
     exit 1
 fi
 
-# Test 2: Verify Installation
-echo "Test 2: Verifying installation"
+# Test 3: Verify Installation
+echo "Test 3: Verifying services are running"
+sleep 10  # Give services time to start
+
+# Check if Keycloak containers are running
 if ! docker ps | grep -q "keycloak"; then
-    echo "Test 2 failed: Keycloak containers not running"
+    echo "Test 3 failed: Keycloak containers not running"
     echo "Docker containers:"
     docker ps -a
     exit 1
 fi
 
-# Test 3: Test Reset
-echo "Test 3: Testing reset"
-cd "${INSTALL_DIR}"
-sudo ./install.sh --reset
+# Test 4: Check keycloak-deploy command
+echo "Test 4: Testing keycloak-deploy command"
+if ! command -v keycloak-deploy &> /dev/null; then
+    echo "Test 4 failed: keycloak-deploy command not found"
+    exit 1
+fi
+
+# Test 5: Test Reset
+echo "Test 5: Testing reset functionality"
+./install.sh --reset
 if [ $? -ne 0 ]; then
-    echo "Test 3 failed: Reset failed"
+    echo "Test 5 failed: Reset failed"
     echo "Installation log:"
     cat /var/log/keycloak-install.log
     exit 1
 fi
 
-# Test 4: Verify Reset
-echo "Test 4: Verifying reset"
+# Verify reset was successful
 if docker ps | grep -q "keycloak"; then
-    echo "Test 4 failed: Keycloak containers still running after reset"
+    echo "Test 5 failed: Keycloak containers still running after reset"
     echo "Docker containers:"
     docker ps -a
     exit 1
 fi
 
-if [ -d "${INSTALL_DIR}" ]; then
-    echo "Test 4 failed: Installation directory still exists after reset"
-    ls -la "${INSTALL_DIR}"
+if [ -d "/opt/fawz/keycloak" ]; then
+    echo "Test 5 failed: Installation directory still exists after reset"
+    ls -la "/opt/fawz/keycloak"
     exit 1
 fi
 

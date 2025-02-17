@@ -1,30 +1,29 @@
 version: '3.8'
 
 services:
-  keycloak-test:
+  vps-test:
     build:
       context: ../..
       dockerfile: tests/deployment/Dockerfile.test
-    privileged: true  # Needed for Docker-in-Docker
+    privileged: true
+    init: true
     environment:
       - INSTALL_DIR=/opt/fawz/keycloak
       - KEYCLOAK_DOMAIN=localhost
       - ADMIN_EMAIL=test@localhost
-      - VENV_DIR=/opt/fawz/keycloak/venv
       - LOG_FILE=/var/log/keycloak-install.log
-      - BACKUP_DIR=/opt/fawz/backup
-      - STATE_FILE=/opt/fawz/.install_state
-      - GIT_USERNAME=${GIT_USERNAME:-}
-      - GIT_PASSWORD=${GIT_PASSWORD:-}
+      - GIT_USERNAME=${GIT_USERNAME}
+      - GIT_PASSWORD=${GIT_PASSWORD}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - ../../install.sh:/root/install.sh
     ports:
-      - "18080:8080"  # HTTP
-      - "18443:8443"  # HTTPS
-      - "13000:3000"  # Grafana
-      - "19090:9090"  # Prometheus
-    depends_on:
-      - postgres
+      - "28080:8080"
+      - "28443:8443"
+      - "23000:3000"
+      - "29090:9090"
+    command: ["/bin/bash", "-c", "cd /root && chmod +x install.sh && ./install.sh --domain localhost --email test@localhost"]
 
   postgres:
     image: postgres:13
@@ -33,7 +32,7 @@ services:
       - POSTGRES_USER=keycloak
       - POSTGRES_PASSWORD=keycloak
     ports:
-      - "5432:5432"
+      - "25432:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
     healthcheck:
@@ -46,9 +45,10 @@ services:
     build:
       context: ../..
       dockerfile: tests/deployment/Dockerfile.test
-    privileged: true  # Needed for Docker-in-Docker
+    privileged: true
+    entrypoint: ["/app/tests/deployment/test-entrypoint.sh"]
     environment:
-      - DOCKER_TLS_CERTDIR=""  # Disable TLS for simplicity in testing
+      - DOCKER_TLS_CERTDIR=""
       - INSTALL_DIR=/opt/fawz/keycloak
       - KEYCLOAK_DOMAIN=localhost
       - ADMIN_EMAIL=test@localhost
@@ -64,13 +64,14 @@ services:
       - /run/lock
     volumes:
       - /var/lib/docker
+      - ../../:/app
     ports:
-      - "18080:8080"  # HTTP
-      - "18443:8443"  # HTTPS
-      - "13000:3000"  # Grafana
-      - "19090:9090"  # Prometheus
+      - "28081:8080"
+      - "28444:8443"
+      - "23001:3000"
+      - "29091:9090"
     depends_on:
-      - keycloak-test
+      - vps-test
       - postgres
 
 volumes:
