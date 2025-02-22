@@ -5,74 +5,10 @@ services:
     build:
       context: ../..
       dockerfile: tests/deployment/Dockerfile.test
-    privileged: true
-    init: true
     environment:
-      - INSTALL_DIR=/opt/fawz/keycloak
-      - KEYCLOAK_DOMAIN=localhost
-      - ADMIN_EMAIL=test@localhost
-      - LOG_FILE=/var/log/keycloak-install.log
       - GIT_USERNAME=${GIT_USERNAME}
       - GIT_PASSWORD=${GIT_PASSWORD}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - ./test-entrypoint.sh:/root/test-entrypoint.sh
       - ../../install.sh:/root/install.sh
-    ports:
-      - "28080:8080"
-      - "28443:8443"
-      - "23000:3000"
-      - "29090:9090"
-    command: ["/bin/bash", "-c", "cd /root && chmod +x install.sh && ./install.sh --domain localhost --email test@localhost"]
-
-  postgres:
-    image: postgres:13
-    environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=keycloak
-      - POSTGRES_PASSWORD=keycloak
-    ports:
-      - "25432:5432"
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  test_runner:
-    build:
-      context: ../..
-      dockerfile: tests/deployment/Dockerfile.test
-    privileged: true
-    entrypoint: ["/app/tests/deployment/test-entrypoint.sh"]
-    environment:
-      - DOCKER_TLS_CERTDIR=""
-      - INSTALL_DIR=/opt/fawz/keycloak
-      - KEYCLOAK_DOMAIN=localhost
-      - ADMIN_EMAIL=test@localhost
-      - VENV_DIR=/opt/fawz/keycloak/venv
-      - LOG_FILE=/var/log/keycloak-install.log
-      - BACKUP_DIR=/opt/fawz/backup
-      - STATE_FILE=/opt/fawz/.install_state
-      - GIT_USERNAME=${GIT_USERNAME:-}
-      - GIT_PASSWORD=${GIT_PASSWORD:-}
-    tmpfs:
-      - /tmp
-      - /run
-      - /run/lock
-    volumes:
-      - /var/lib/docker
-      - ../../:/app
-    ports:
-      - "28081:8080"
-      - "28444:8443"
-      - "23001:3000"
-      - "29091:9090"
-    depends_on:
-      - vps-test
-      - postgres
-
-volumes:
-  postgres_test_data:
+    command: ["/bin/bash", "/root/test-entrypoint.sh"]

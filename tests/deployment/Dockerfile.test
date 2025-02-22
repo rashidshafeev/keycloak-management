@@ -1,6 +1,6 @@
 FROM debian:bullseye-slim
 
-# Install basic dependencies and Docker prerequisites
+# Install basic dependencies
 RUN apt-get update && apt-get install -y \
     apt-transport-https \
     ca-certificates \
@@ -11,21 +11,14 @@ RUN apt-get update && apt-get install -y \
     git \
     python3 \
     python3-pip \
-    wget \
-    systemd \
-    systemd-sysv \
-    dos2unix \
     && rm -rf /var/lib/apt/lists/*
 
-# Add Docker's official GPG key
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-# Set up Docker repository
-RUN echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+# Add Docker's official GPG key and repository
+RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
     $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Install Docker and docker-compose
+# Install Docker
 RUN apt-get update && apt-get install -y \
     docker-ce \
     docker-ce-cli \
@@ -33,23 +26,4 @@ RUN apt-get update && apt-get install -y \
     docker-compose \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure git credentials helper
-RUN git config --global credential.helper store
-
-# Clean up systemd
-RUN cd /lib/systemd/system/sysinit.target.wants/ \
-    && rm $(ls | grep -v systemd-tmpfiles-setup)
-
-RUN rm -f /lib/systemd/system/multi-user.target.wants/* \
-    /etc/systemd/system/*.wants/* \
-    /lib/systemd/system/local-fs.target.wants/* \
-    /lib/systemd/system/sockets.target.wants/*udev* \
-    /lib/systemd/system/sockets.target.wants/*initctl* \
-    /lib/systemd/system/basic.target.wants/* \
-    /lib/systemd/system/anaconda.target.wants/* \
-    /lib/systemd/system/plymouth* \
-    /lib/systemd/system/systemd-update-utmp*
-
-VOLUME [ "/sys/fs/cgroup" ]
-
-CMD ["/lib/systemd/systemd"]
+CMD ["/bin/bash"]
