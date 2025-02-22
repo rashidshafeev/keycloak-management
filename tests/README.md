@@ -1,199 +1,82 @@
-# Keycloak Configuration Testing
+# Testing Environment
 
-## Local Testing Setup
+This directory contains the testing setup for the Keycloak Management project.
 
-### 1. Prerequisites
-```bash
-# Start local Keycloak instance
-docker-compose -f docker-compose.test.yml up -d
+## Overview
 
-# Install test dependencies
-pip install pytest pytest-asyncio pytest-cov
-```
+The testing environment is designed to simulate a real VPS deployment scenario where a user would:
+1. Copy the install.sh script to their server
+2. Make it executable
+3. Run it to set up Keycloak and related services
 
-### 2. Test Structure
+## Directory Structure
+
 ```
 tests/
-├── config/                     # Configuration tests
-│   ├── test_authentication.py  # Authentication flow tests
-│   ├── test_clients.py        # Client configuration tests
-│   ├── test_events.py         # Event system tests
-│   ├── test_integration.py    # Integration tests
-│   └── test_config.yml        # Test configuration
-├── data/                      # Test data
-│   ├── realms/               # Realm configurations
-│   ├── clients/              # Client configurations
-│   └── users/                # Test user data
-├── scripts/                  # Test utilities
-│   ├── setup_test_env.sh     # Environment setup
-│   └── cleanup_test_env.sh   # Environment cleanup
-└── deployment/               # Deployment testing
-    ├── Dockerfile.test        # Dockerfile for deployment testing
-    ├── test-entrypoint.sh     # Handles Docker daemon startup inside the test container
-    └── run-test-env.sh        # Script to build and run the test environment
+├── deployment/           # Docker-based test environment
+│   ├── Dockerfile.test  # Test container definition
+│   ├── docker-compose.test.yml
+│   └── test-entrypoint.sh
+└── config/              # Configuration tests
+    ├── test_authentication.py
+    ├── test_clients.py
+    ├── test_events.py
+    └── test_integration.py
 ```
 
-### 3. Running Tests
+## Test Environment
+
+The test environment uses Docker to simulate a clean VPS environment:
+- Base image: debian:bullseye-slim
+- Required packages pre-installed
+- Privileged mode for system operations
+
+### Flow Simulation
+
+The test environment simulates the following user flow:
+
+```
+Real VPS Environment          Test Environment
+--------------------         -----------------
+1. Copy install.sh     -->   1. Mount install.sh
+2. Make executable     -->   2. Make executable
+3. Run install.sh     -->   3. Run install.sh
+   - Clones repo            - Clones repo
+   - Sets up env           - Sets up env
+   - Installs deps         - Installs deps
+   - Configures system     - Configures system
+```
+
+## Running Tests
+
+To run the test environment:
+
 ```bash
-# Run all tests
-pytest tests/
-
-# Run specific test category
-pytest tests/config/test_authentication.py
-
-# Run with coverage
-pytest --cov=keycloak_management tests/
-```
-
-## Test Categories
-
-### 1. Configuration Tests
-- Schema validation
-- CLI command validation
-- Configuration file parsing
-- Environment variable handling
-
-### 2. Authentication Tests
-- Authentication flow configuration
-- Password policies
-- MFA setup
-- Social login configuration
-
-### 3. Client Tests
-- Client creation and configuration
-- Protocol mapper setup
-- Client scope configuration
-- Service account setup
-
-### 4. Event Tests
-- Event listener configuration
-- Event storage setup
-- Webhook integration
-- Event processing
-
-### 5. Integration Tests
-- End-to-end configuration
-- Data synchronization
-- Error handling
-- Rollback scenarios
-
-## Automated Test Suite
-
-### 1. Unit Tests
-```python
-# tests/config/test_authentication.py
-import pytest
-from keycloak_management.config import AuthConfig
-
-def test_auth_flow_configuration():
-    config = AuthConfig.from_yaml("test_config.yml")
-    assert config.validate() is True
-    assert config.auth_flow.type == "browser"
-    # Add more assertions
-```
-
-### 2. Integration Tests
-```python
-# tests/config/test_integration.py
-import pytest
-from keycloak_management import KeycloakManager
-
-@pytest.mark.asyncio
-async def test_full_configuration():
-    manager = KeycloakManager()
-    await manager.configure_from_yaml("test_config.yml")
-    # Verify configuration
-    assert await manager.verify_configuration()
-```
-
-### 3. Configuration Tests
-```python
-# tests/config/test_clients.py
-import pytest
-from keycloak_management.config import ClientConfig
-
-def test_client_configuration():
-    config = ClientConfig.from_yaml("test_config.yml")
-    assert config.validate_client_urls()
-    assert config.validate_protocol_mappers()
-    # Add more assertions
-```
-
-## Running Locally
-
-1. Start test environment:
-```bash
-./tests/scripts/setup_test_env.sh
-```
-
-2. Run test suite:
-```bash
-pytest --cov=keycloak_management tests/
-```
-
-3. View test coverage:
-```bash
-coverage report
-coverage html  # For detailed HTML report
-```
-
-4. Cleanup:
-```bash
-./tests/scripts/cleanup_test_env.sh
-```
-
-## Deployment Testing
-
-### 4. Deployment Testing
-The `deployment/` directory contains tools for testing the full deployment process in an isolated environment:
-
-- `Dockerfile.test`: Creates an Ubuntu-based container for deployment testing
-- `test-entrypoint.sh`: Handles Docker daemon startup inside the test container
-- `run-test-env.sh`: Script to build and run the test environment
-
-To run deployment tests:
-```bash
-# Navigate to the deployment test directory
 cd tests/deployment
-
-# Build and start the test environment
-./run-test-env.sh
-
-# Enter the test container
-docker exec -it keycloak-test-env bash
-
-# Inside the container, run the deployment
-python3 deploy.py --domain test.local --email test@example.com --config test-config.yaml
+docker-compose -f docker-compose.test.yml up --build
 ```
 
-The deployment test environment uses Docker-in-Docker (DinD) to allow testing the full deployment process in an isolated container.
+This will:
+1. Build the test container
+2. Mount the install script
+3. Run the installation process
+4. Verify the setup
 
-## Test Configuration Example
+## Test Cases
 
-```yaml
-# tests/config/test_config.yml
-realm:
-  name: "test-realm"
-  enabled: true
-  displayName: "Test Realm"
-  
-clients:
-  - clientId: "test-client"
-    name: "Test Client"
-    protocol: "openid-connect"
-    enabled: true
-    publicClient: false
-    
-authentication:
-  flows:
-    - alias: "browser"
-      type: "basic-flow"
-      description: "Browser based authentication"
-      
-events:
-  enabled: true
-  listeners:
-    - "webhook"
-  storage:
-    type: "database"
-    retention: "30d"
+The test environment verifies:
+- Installation on fresh system
+- Dependency installation
+- Repository cloning
+- Environment setup
+- Virtual environment creation
+- System configuration
+- Error handling and rollback
+
+## Configuration Tests
+
+The `config/` directory contains Python unit tests for various configuration aspects:
+- Authentication configuration
+- Client management
+- Event handling
+- Integration tests
