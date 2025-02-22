@@ -13,15 +13,19 @@ if [ ! -z "$GIT_USERNAME" ] && [ ! -z "$GIT_PASSWORD" ]; then
     chmod 600 ~/.git-credentials
 fi
 
-# Start Docker daemon
-service docker start || {
-    echo "Failed to start Docker service"
-    exit 1
-}
+# We don't need to start Docker daemon when running in Docker
+
+# Copy install script to home directory (simulating real user scenario)
+echo "Copying install script to home directory..."
+cp /root/install.sh /root/
+cd /root
+
+# Make script executable
+chmod +x install.sh
 
 # Run installation script
 echo "Running installation script..."
-cd /root && ./install.sh --domain localhost --email test@localhost
+./install.sh
 
 # Keep container running
 echo "Installation completed. Container is ready for further testing. Use 'docker exec' to run commands."

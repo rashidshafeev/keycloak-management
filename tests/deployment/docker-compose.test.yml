@@ -11,4 +11,5 @@ services:
     volumes:
       - ./test-entrypoint.sh:/root/test-entrypoint.sh
       - ../../install.sh:/root/install.sh
+    privileged: true
     command: ["/bin/bash", "/root/test-entrypoint.sh"]
