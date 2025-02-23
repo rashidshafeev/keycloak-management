@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "./scripts/install/common.sh"
+source "${SCRIPTS_DIR}/common.sh"
 
 check_root() {
     if [[ $EUID -ne 0 ]]; then
@@ -31,7 +31,6 @@ check_system() {
     # Check for required commands
     local required_commands=(
         "git"
-        "python3"
         "docker"
     )
     
@@ -40,4 +39,9 @@ check_system() {
             handle_error 1 "Required command '$cmd' not found" "check_system"
         fi
     done
+
+    # Allow installation to proceed even if python3 is not found
+    if ! command -v "python3" &> /dev/null; then
+        echo "Warning: Required command 'python3' not found. It will be installed during the dependencies step."
+    fi
 }

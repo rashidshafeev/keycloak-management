@@ -137,21 +137,14 @@ clone_repository() {
     if [[ -z "${completed_steps[repository]}" ]]; then
         echo "Setting up repository..."
         
-        # Create installation directory
-        mkdir -p "${INSTALL_DIR}"
+        # Configure git to trust this directory if needed
+        if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
+            echo "Configuring git to trust ${INSTALL_DIR}..."
+            git config --global --add safe.directory "${INSTALL_DIR}"
+        fi
         
-        # Clone repository
-        if [ ! -d "${INSTALL_DIR}/.git" ]; then
-            if ! git clone "${REPO_URL}" "${INSTALL_DIR}"; then
-                handle_error $? "Failed to clone repository" "clone_repository"
-            fi
-            
-            # Configure git to trust this directory
-            if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
-                echo "Configuring git to trust ${INSTALL_DIR}..."
-                git config --global --add safe.directory "${INSTALL_DIR}"
-            fi
-        else
+        # Update repository if it exists
+        if [ -d "${INSTALL_DIR}/.git" ]; then
             echo "Repository exists, updating..."
             cd "${INSTALL_DIR}"
             git pull

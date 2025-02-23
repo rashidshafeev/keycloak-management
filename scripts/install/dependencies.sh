@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source "./scripts/install/common.sh"
+source "${SCRIPTS_DIR}/common.sh"
 
 install_dependencies() {
     if [[ -z "${completed_steps[dependencies]}" ]]; then
@@ -12,6 +12,13 @@ install_dependencies() {
             OS=$NAME
         else
             OS=$(uname -s)
+        fi
+        
+        # First, try to install Python regardless of OS
+        if ! command -v python3 &> /dev/null; then
+            echo "Python3 not found. Installing..."
+            apt-get update
+            apt-get install -y python3 python3-pip python3-venv
         fi
         
         case "$OS" in
@@ -60,12 +67,24 @@ install_dependencies() {
                     wget || handle_error $? "Failed to install packages" "install_dependencies"
                 ;;
             *)
-                echo "Warning: Unsupported system. Please install dependencies manually:"
-                echo "- Python 3"
-                echo "- pip"
-                echo "- Docker"
-                echo "- Docker Compose"
-                echo "- Git"
+                # For unsupported systems, try to install Python using apt-get
+                if [ -x "$(command -v apt-get)" ]; then
+                    echo "Debian-based system detected. Installing dependencies..."
+                    apt-get update
+                    apt-get install -y \
+                        python3 \
+                        python3-pip \
+                        python3-venv \
+                        git \
+                        curl
+                else
+                    echo "Warning: Unsupported system. Please install dependencies manually:"
+                    echo "- Python 3"
+                    echo "- pip"
+                    echo "- Docker"
+                    echo "- Docker Compose"
+                    echo "- Git"
+                fi
                 ;;
         esac
         

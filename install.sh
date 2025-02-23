@@ -15,14 +15,6 @@ while [[ $# -gt 0 ]]; do
             RESET=1
             shift
             ;;
-        --domain)
-            export KEYCLOAK_DOMAIN="$2"
-            shift 2
-            ;;
-        --email)
-            export ADMIN_EMAIL="$2"
-            shift 2
-            ;;
         --no-clone)
             NO_CLONE=true
             shift
@@ -32,8 +24,6 @@ while [[ $# -gt 0 ]]; do
             echo
             echo "Options:"
             echo "  --reset               Reset the installation"
-            echo "  --domain DOMAIN       Domain for Keycloak (default: system hostname)"
-            echo "  --email EMAIL         Admin email (default: admin@hostname)"
             echo "  --no-clone            Do not clone the repository"
             echo "  --help                Show this help message"
             exit 0
@@ -49,7 +39,6 @@ done
 # Initial configuration
 REPO_URL="https://git.rashidshafeev.ru/rashidshafeev/keycloak-management.git"
 INSTALL_DIR="/opt/fawz/keycloak"
-SCRIPTS_DIR="$(dirname "$0")/scripts/install"
 LOG_FILE="/var/log/keycloak-install.log"
 
 # Setup logging
@@ -68,7 +57,7 @@ fi
 # Create installation directory
 mkdir -p "${INSTALL_DIR}"
 
-# Clone or update repository
+# Clone or update repository first
 if [ "$NO_CLONE" != "true" ]; then
     if [ ! -d "${INSTALL_DIR}/.git" ]; then
         echo "Cloning repository..."
@@ -89,16 +78,23 @@ if [ "$NO_CLONE" != "true" ]; then
     fi
 fi
 
-# Source all installation modules in specific order
-echo "Loading installation modules..."
-# First load common.sh as it contains shared functions and variables
+# Now that we have cloned the repo, set up the scripts directory path
+SCRIPTS_DIR="${INSTALL_DIR}/scripts/install"
+
+# Change to installation directory
+cd "${INSTALL_DIR}"
+
+# Source common functions
 source "${SCRIPTS_DIR}/common.sh"
+
+# Install dependencies first
+source "${SCRIPTS_DIR}/dependencies.sh"
+install_dependencies
 
 # Then load other modules in specific order
 modules=(
     "cleanup.sh"
     "command.sh"
-    "dependencies.sh"
     "environment.sh"
     "system_checks.sh"
     "virtualenv.sh"
@@ -109,6 +105,8 @@ for module in "${modules[@]}"; do
     if [ -f "$module_path" ]; then
         echo "Loading module: $module"
         source "$module_path"
+    else
+        echo "Warning: Module $module not found in ${SCRIPTS_DIR}"
     fi
 done
 
@@ -139,9 +137,7 @@ trap 'handle_error $? "Installation failed" "main"' ERR
 check_root
 check_system
 install_dependencies
-clone_repository
 setup_environment
-setup_virtualenv
 create_command
 
 # Remove error trap
@@ -149,9 +145,6 @@ trap - ERR
 
 echo "Installation completed successfully!"
 echo "You can now use 'keycloak-deploy' command to manage your Keycloak deployment."
-echo
-echo "Domain: ${KEYCLOAK_DOMAIN}"
-echo "Admin Email: ${ADMIN_EMAIL}"
 echo
 echo "To reset the installation, run:"
 echo "  $0 --reset"
