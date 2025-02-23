@@ -15,8 +15,13 @@ from .database_backup import DatabaseBackupStep
 from .base import DeploymentStep
 
 class DeploymentOrchestrator:
-    def __init__(self, config_path: Path):
-        self.config = self._load_config(config_path)
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize orchestrator with configuration
+        
+        Args:
+            config: Dictionary containing environment configuration
+        """
+        self.config = config
         self.logger = logging.getLogger("keycloak_deployer")
         self.steps = [
             SystemPreparationStep(),
@@ -27,9 +32,6 @@ class DeploymentOrchestrator:
             PrometheusManager(self.config),
             DatabaseBackupStep(self.config)
         ]
-
-    def _load_config(self, config_path: Path) -> dict:
-        return json.loads(config_path.read_text())
 
     @contextmanager
     def step_context(self, step: DeploymentStep):
@@ -66,7 +68,7 @@ class DeploymentOrchestrator:
         # Get SSL certificate expiry
         try:
             ssl_expiry = subprocess.run(
-                ['openssl', 'x509', '-enddate', '-noout', '-in', self.config['ssl']['cert_path']], 
+                ['openssl', 'x509', '-enddate', '-noout', '-in', self.config['SSL_CERT_PATH']], 
                 capture_output=True, text=True
             ).stdout.strip()
         except:
@@ -74,7 +76,7 @@ class DeploymentOrchestrator:
             
         # Get last backup date
         try:
-            backup_path = Path(self.config['backup']['storage_path'])
+            backup_path = Path(self.config.get('BACKUP_STORAGE_PATH', '/var/backup/keycloak'))
             backups = sorted(backup_path.glob('*'), key=lambda x: x.stat().st_mtime, reverse=True)
             last_backup = datetime.fromtimestamp(backups[0].stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S') if backups else "No backups found"
         except:
@@ -83,49 +85,49 @@ class DeploymentOrchestrator:
         # Prepare variables
         variables = {
             'INSTALL_DATE': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'KEYCLOAK_HOST': self.config['keycloak']['host'],
-            'KEYCLOAK_PORT': self.config['keycloak']['port'],
-            'KEYCLOAK_ADMIN': self.config['keycloak']['admin_user'],
-            'KEYCLOAK_ADMIN_PASSWORD': self.config['keycloak']['admin_password'],
+            'KEYCLOAK_HOST': self.config['KEYCLOAK_DOMAIN'],
+            'KEYCLOAK_PORT': self.config.get('KEYCLOAK_PORT', '8443'),
+            'KEYCLOAK_ADMIN': self.config['KEYCLOAK_ADMIN'],
+            'KEYCLOAK_ADMIN_PASSWORD': self.config['KEYCLOAK_ADMIN_PASSWORD'],
             'PROMETHEUS_HOST': 'localhost',
-            'PROMETHEUS_DATA_DIR': '/var/lib/prometheus',
+            'PROMETHEUS_DATA_DIR': self.config.get('PROMETHEUS_DATA_DIR', '/var/lib/prometheus'),
             'GRAFANA_HOST': 'localhost',
-            'GRAFANA_ADMIN_USER': self.config['grafana']['admin_user'],
-            'GRAFANA_ADMIN_PASSWORD': self.config['grafana']['admin_password'],
-            'GRAFANA_ALERT_EMAIL': self.config['grafana'].get('alert_email', ''),
-            'GRAFANA_SLACK_CHANNEL': self.config['grafana'].get('slack_channel', '#alerts'),
-            'WAZUH_MANAGER_IP': self.config['wazuh']['manager_ip'],
-            'WAZUH_AGENT_NAME': self.config['wazuh']['agent_name'],
+            'GRAFANA_ADMIN_USER': self.config.get('GRAFANA_ADMIN_USER', 'admin'),
+            'GRAFANA_ADMIN_PASSWORD': self.config.get('GRAFANA_ADMIN_PASSWORD', 'admin'),
+            'GRAFANA_ALERT_EMAIL': self.config.get('GRAFANA_ALERT_EMAIL', ''),
+            'GRAFANA_SLACK_CHANNEL': self.config.get('GRAFANA_SLACK_CHANNEL', '#alerts'),
+            'WAZUH_MANAGER_IP': self.config.get('WAZUH_MANAGER_IP', 'localhost'),
+            'WAZUH_AGENT_NAME': self.config.get('WAZUH_AGENT_NAME', 'keycloak-agent'),
             'WAZUH_AGENT_ID': 'Run "wazuh-agent -l" to get ID',
-            'FIREWALL_ALLOWED_PORTS': ', '.join(map(str, self.config['firewall']['allowed_ports'])),
-            'FIREWALL_ADMIN_IPS': ', '.join(self.config['firewall']['admin_ips']),
-            'DB_HOST': self.config['database']['host'],
-            'DB_PORT': self.config['database']['port'],
-            'DB_NAME': self.config['database']['name'],
-            'DB_USER': self.config['database']['user'],
-            'DB_PASSWORD': self.config['database']['password'],
-            'SSL_CERT_PATH': self.config['ssl']['cert_path'],
-            'SSL_KEY_PATH': self.config['ssl']['key_path'],
+            'FIREWALL_ALLOWED_PORTS': self.config.get('FIREWALL_ALLOWED_PORTS', '80,443,8080,8443'),
+            'FIREWALL_ADMIN_IPS': self.config.get('FIREWALL_ADMIN_IPS', '127.0.0.1'),
+            'DB_HOST': self.config.get('DB_HOST', 'localhost'),
+            'DB_PORT': self.config.get('DB_PORT', '5432'),
+            'DB_NAME': self.config.get('DB_NAME', 'keycloak'),
+            'DB_USER': self.config.get('DB_USER', 'keycloak'),
+            'DB_PASSWORD': self.config['DB_PASSWORD'],
+            'SSL_CERT_PATH': self.config.get('SSL_CERT_PATH', ''),
+            'SSL_KEY_PATH': self.config.get('SSL_KEY_PATH', ''),
             'SSL_EXPIRY_DATE': ssl_expiry,
             'INSTALL_ROOT': str(Path(__file__).parent.parent.parent),
-            'CONFIG_DIR': '/etc/fawz/keycloak',
-            'LOG_DIR': '/var/log/fawz/keycloak',
-            'BACKUP_STORAGE_PATH': self.config['backup']['storage_path'],
+            'CONFIG_DIR': '/etc/keycloak',
+            'LOG_DIR': '/var/log/keycloak',
+            'BACKUP_STORAGE_PATH': self.config.get('BACKUP_STORAGE_PATH', '/var/backup/keycloak'),
             'DOCKER_VOLUMES_PATH': '/var/lib/docker/volumes',
             'SERVICE_STATUS': '\n'.join(service_status),
-            'BACKUP_TIME': self.config['backup'].get('time', '02:00'),
-            'BACKUP_RETENTION_DAYS': self.config['backup'].get('retention_days', 30),
+            'BACKUP_TIME': self.config.get('BACKUP_TIME', '02:00'),
+            'BACKUP_RETENTION_DAYS': self.config.get('BACKUP_RETENTION_DAYS', '30'),
             'LAST_BACKUP_DATE': last_backup,
-            'DEBUG_MODE': str(self.config.get('debug', False)),
-            'SUPPORT_EMAIL': self.config.get('support_email', 'support@example.com'),
-            'ADDITIONAL_NOTES': self.config.get('additional_notes', 'No additional notes.')
+            'DEBUG_MODE': str(self.config.get('DEBUG_MODE', False)),
+            'SUPPORT_EMAIL': self.config.get('SUPPORT_EMAIL', 'support@example.com'),
+            'ADDITIONAL_NOTES': self.config.get('ADDITIONAL_NOTES', 'No additional notes.')
         }
         
         # Generate summary
         summary = template.safe_substitute(variables)
         
         # Save summary
-        summary_path = Path(self.config['install_root']) / 'installation_summary.md'
+        summary_path = Path(self.config.get('INSTALL_ROOT', '/opt/keycloak')) / 'installation_summary.md'
         with open(summary_path, 'w') as f:
             f.write(summary)
             
