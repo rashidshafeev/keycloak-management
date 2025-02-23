@@ -78,6 +78,13 @@ if [ "$NO_CLONE" != "true" ]; then
     fi
 fi
 
+# Check for .env.kcmanage in the current directory
+if [ -f ".env.kcmanage" ]; then
+    echo "Found .env.kcmanage, copying to repository..."
+    cp .env.kcmanage "${INSTALL_DIR}/.env"
+    chmod 600 "${INSTALL_DIR}/.env"  # Secure file permissions
+fi
+
 # Set up scripts directory path
 SCRIPTS_DIR="${INSTALL_DIR}/scripts/install"
 
