@@ -1,11 +1,5 @@
 FROM debian:bullseye-slim
 
-# Configure apt to retry downloads and use a reliable mirror
-RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80retries \
-    && echo "deb http://mirror.yandex.ru/debian bullseye main" > /etc/apt/sources.list \
-    && echo "deb http://mirror.yandex.ru/debian-security bullseye-security main" >> /etc/apt/sources.list \
-    && echo "deb http://mirror.yandex.ru/debian bullseye-updates main" >> /etc/apt/sources.list
-
 # Install minimal requirements to get started
 RUN apt-get update && apt-get install -y \
     sudo \
