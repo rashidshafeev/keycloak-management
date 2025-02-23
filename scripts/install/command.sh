@@ -6,11 +6,22 @@ create_command() {
     if [[ -z "${completed_steps[command]}" ]]; then
         echo "Creating kcmanage command..."
         
-        # Create command script
+        # Create command script with proper venv activation
         cat > /usr/local/bin/kcmanage << EOL
 #!/bin/bash
-source "${VENV_DIR}/bin/activate"
-python "${INSTALL_DIR}/deploy.py" "\$@"
+
+# Get the directory where Keycloak is installed
+INSTALL_DIR="/opt/fawz/keycloak"
+VENV_DIR="\${INSTALL_DIR}/venv"
+
+# Activate virtual environment
+source "\${VENV_DIR}/bin/activate"
+
+# Execute the Python script with all arguments
+python "\${INSTALL_DIR}/deploy.py" "\$@"
+
+# Deactivate virtual environment
+deactivate
 EOL
         
         # Make command executable
