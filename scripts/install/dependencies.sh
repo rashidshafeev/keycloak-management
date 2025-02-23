@@ -2,6 +2,72 @@
 
 source "${SCRIPTS_DIR}/common.sh"
 
+install_docker() {
+    echo "Installing Docker using official method..."
+    
+    # First, uninstall any conflicting packages
+    echo "Removing old Docker packages if they exist..."
+    for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do
+        apt-get remove -y $pkg || true
+    done
+
+    # Add Docker's official GPG key
+    apt-get update
+    apt-get install -y ca-certificates curl gnupg
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
+
+    # Add the repository to Apt sources
+    # Handle derivative distributions by using debian as the base
+    echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+        bookworm stable" | \
+        tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    # Update apt and install Docker
+    apt-get update
+    apt-get install -y \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        docker-buildx-plugin \
+        docker-compose-plugin
+
+    # Start and enable Docker
+    if command -v systemctl &> /dev/null; then
+        systemctl start docker || true
+        systemctl enable docker || true
+    fi
+
+    # Create docker group and add current user if not root
+    if [[ $EUID -ne 0 ]]; then
+        groupadd docker || true
+        usermod -aG docker $USER || true
+    fi
+
+    # Verify Docker installation
+    if ! docker run --rm hello-world &> /dev/null; then
+        echo "Warning: Docker installation verification failed. Please check Docker installation manually."
+    fi
+
+    # Configure UFW to work with Docker if UFW is installed
+    if command -v ufw &> /dev/null; then
+        echo "Configuring UFW for Docker..."
+        # Create UFW Docker rules file
+        cat > /etc/ufw/applications.d/docker <<EOF
+[Docker]
+title=Docker
+description=Docker container engine
+ports=2375,2376,2377,7946/tcp|7946/udp|4789/udp
+EOF
+        ufw reload
+        # Add rules to the DOCKER-USER chain
+        iptables -N DOCKER-USER || true
+        iptables -A DOCKER-USER -j RETURN
+    fi
+}
+
 install_dependencies() {
     if [[ -z "${completed_steps[dependencies]}" ]]; then
         echo "Installing dependencies..."
@@ -22,7 +88,7 @@ install_dependencies() {
         fi
         
         case "$OS" in
-            "Ubuntu")
+            "Ubuntu"|"Debian GNU/Linux")
                 # Update package lists
                 apt-get update || handle_error $? "Failed to update package lists" "install_dependencies"
                 
@@ -35,20 +101,12 @@ install_dependencies() {
                     libssl-dev \
                     libffi-dev \
                     git \
-                    docker.io \
-                    docker-compose \
                     curl \
                     wget \
                     ufw || handle_error $? "Failed to install packages" "install_dependencies"
                 
-                # Start and enable Docker
-                systemctl start docker || handle_error $? "Failed to start Docker" "install_dependencies"
-                systemctl enable docker || handle_error $? "Failed to enable Docker" "install_dependencies"
-
-                # Add current user to docker group if not root
-                if [[ $EUID -ne 0 ]]; then
-                    usermod -aG docker $USER || handle_error $? "Failed to add user to docker group" "install_dependencies"
-                fi
+                # Install Docker using official method
+                install_docker
                 ;;
             "Alpine Linux")
                 # Alpine dependencies
@@ -77,6 +135,9 @@ install_dependencies() {
                         python3-venv \
                         git \
                         curl
+
+                    # Install Docker using official method
+                    install_docker
                 else
                     echo "Warning: Unsupported system. Please install dependencies manually:"
                     echo "- Python 3"

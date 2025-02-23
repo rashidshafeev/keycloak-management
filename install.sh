@@ -87,14 +87,14 @@ cd "${INSTALL_DIR}"
 # Source common functions
 source "${SCRIPTS_DIR}/common.sh"
 
-# Install dependencies first
+# Install dependencies
 source "${SCRIPTS_DIR}/dependencies.sh"
-install_dependencies
 
 # Then load other modules in specific order
 modules=(
     "cleanup.sh"
     "command.sh"
+    "dependencies.sh"
     "environment.sh"
     "system_checks.sh"
     "virtualenv.sh"

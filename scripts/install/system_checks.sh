@@ -31,7 +31,6 @@ check_system() {
     # Check for required commands
     local required_commands=(
         "git"
-        "docker"
     )
     
     for cmd in "${required_commands[@]}"; do
@@ -43,5 +42,10 @@ check_system() {
     # Allow installation to proceed even if python3 is not found
     if ! command -v "python3" &> /dev/null; then
         echo "Warning: Required command 'python3' not found. It will be installed during the dependencies step."
+    fi
+
+    # Allow installation to proceed even if docker is not found
+    if ! command -v "docker" &> /dev/null; then
+        echo "Warning: Required command 'docker' not found. It will be installed during the dependencies step."
     fi
 }
