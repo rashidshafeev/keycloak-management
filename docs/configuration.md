@@ -1,61 +1,70 @@
 # Keycloak Configuration Guide
 
 ## Overview
-The Keycloak configuration system uses YAML files for configuration and Python for validation and application. This provides:
-- Easy-to-read and modify configuration files
+This guide describes the configuration system for the Keycloak deployment. The system uses a combination of environment variables and YAML configuration files to provide:
+- Easy-to-read and modify configuration
 - Strong validation and error handling
 - Rollback capabilities
-- Environment variable support
+- Secure credential management
 
-## Configuration Files
-Configuration files are stored in `config/templates/` and follow this naming convention:
-- `realm.yml` - Realm configuration
-- `events.yml` - Events and listeners configuration
-- `security.yml` - Security settings
-- `users.yml` - User configuration
-- `notifications.yml` - Notification settings
+## Configuration Structure
 
-## Environment Variables
-You can use environment variables in your YAML files using the `${VAR_NAME}` syntax:
+### 1. Environment Variables (.env)
+The main configuration is done through environment variables defined in `.env`. Copy `.env.example` to create your configuration:
 
-```yaml
-events:
-  listeners:
-    - name: "webhook"
-      enabled: true
-      properties:
-        secret: "${WEBHOOK_SECRET}"
+```bash
+cp .env.example .env
 ```
 
-## Example Configurations
+Configuration sections:
 
-### Security Configuration (security.yml)
+#### Core Settings
+- `KEYCLOAK_ADMIN`: Admin username
+- `KEYCLOAK_ADMIN_PASSWORD`: Admin password
+- `KEYCLOAK_CLIENT_SECRET`: Default client secret
+
+#### Database
+- `POSTGRES_PASSWORD`: Database root password
+- `DB_DATABASE`: Keycloak database name
+- `DB_USER`: Database user
+- `DB_PASSWORD`: Database password
+
+#### Docker
+- `DOCKER_REGISTRY`: Container registry
+- `KEYCLOAK_VERSION`: Keycloak image version
+- `POSTGRES_VERSION`: PostgreSQL version
+
+#### SSL/TLS
+- `SSL_CERT_PATH`: Certificate path
+- `SSL_KEY_PATH`: Private key path
+- `SSL_EMAIL`: Admin email for certificates
+- `SSL_DOMAINS`: Domain names
+
+#### Monitoring
+- `PROMETHEUS_SCRAPE_INTERVAL`: Metrics collection interval
+- `PROMETHEUS_RETENTION_TIME`: Data retention period
+- `GRAFANA_ADMIN_PASSWORD`: Grafana admin password
+
+#### Notifications
+- SMTP settings for email
+- Twilio settings for SMS
+- Webhook configuration for events
+
+### 2. YAML Configuration Files
+Located in `config/templates/`, these files define specific aspects of Keycloak:
+
+#### Authentication (authentication.yml)
 ```yaml
-security:
-  passwordPolicy:
-    - type: "length"
-      value: 8
-    - type: "digits"
-      value: 1
-    - type: "upperCase"
-      value: 1
-    - type: "specialChars"
-      value: 1
-  bruteForce:
-    maxFailureWaitSeconds: 900
-    waitIncrementSeconds: 60
-    quickLoginCheckMilliSeconds: 1000
-    minimumQuickLoginWaitSeconds: 60
-    maxDeltaTimeSeconds: 43200
-    failureFactor: 3
-  session:
-    ssoSessionIdleTimeout: 1800
-    ssoSessionMaxLifespan: 36000
-    offlineSessionIdleTimeout: 2592000
-    accessTokenLifespan: 300
+flows:
+  browser:
+    type: basic-flow
+    requirements:
+      - cookie
+      - kerberos
+      - form
 ```
 
-### Events Configuration (events.yml)
+#### Events (events.yml)
 ```yaml
 events:
   listeners:
@@ -64,44 +73,98 @@ events:
     - name: "webhook"
       enabled: true
       properties:
-        url: "http://event-bus:3000/events"
+        url: "${EVENT_WEBHOOK_URL}"
         secret: "${EVENT_WEBHOOK_SECRET}"
-        retries: 3
-        timeout: 5000
-  included_events:
-    - LOGIN
-    - LOGOUT
-    - REGISTER
-    - UPDATE_PROFILE
-  admin_events:
-    enabled: true
-    include_representation: false
 ```
 
-## Usage
-
-### Command Line
-```bash
-# Configure all components
-python deploy.py configure
-
-# Configure specific component
-python deploy.py configure --component events
+#### Security (security.yml)
+```yaml
+security:
+  passwordPolicy:
+    - type: "length"
+      value: 8
+    - type: "complexity"
+      value: 3
+  bruteForce:
+    maxFailureWaitSeconds: 900
+    failureFactor: 3
 ```
 
-### Interactive Mode
-```bash
-python deploy.py configure --interactive
-```
+## Deployment Flow
 
-## Error Handling
-- Configuration validation errors will be logged with detailed messages
-- Failed configurations will be automatically rolled back
-- Each component maintains its own rollback history
+1. **System Preparation**
+   - Environment validation
+   - Dependency checks
+   - Network setup
+
+2. **Infrastructure Setup**
+   - Docker configuration
+   - SSL certificate management
+   - Database initialization
+
+3. **Keycloak Deployment**
+   - Container orchestration
+   - Health checks
+   - Initial configuration
+
+4. **Post-Deployment**
+   - Monitoring setup
+   - Backup configuration
+   - Security hardening
 
 ## Best Practices
-1. Always use version control for your YAML configurations
-2. Test configuration changes in a non-production environment first
-3. Use environment variables for sensitive values
-4. Keep configurations modular and focused
-5. Document any custom configurations in your team's documentation
+
+1. **Security**
+   - Never commit `.env` file
+   - Use strong passwords
+   - Regularly rotate secrets
+   - Enable audit logging
+
+2. **Monitoring**
+   - Set up alerts for critical metrics
+   - Monitor authentication failures
+   - Track resource usage
+
+3. **Backup**
+   - Regular database backups
+   - Configuration backups
+   - Test restore procedures
+
+4. **Updates**
+   - Regular security updates
+   - Staged rollouts
+   - Maintain rollback plans
+
+## Troubleshooting
+
+1. **Container Issues**
+   ```bash
+   # Check container status
+   docker ps -a | grep keycloak
+   # View container logs
+   docker logs keycloak
+   ```
+
+2. **Database Issues**
+   ```bash
+   # Check database connectivity
+   docker exec postgres pg_isready
+   # View database logs
+   docker logs postgres
+   ```
+
+3. **SSL Issues**
+   ```bash
+   # Verify certificate
+   openssl x509 -in $SSL_CERT_PATH -text -noout
+   # Check certificate expiry
+   openssl x509 -enddate -noout -in $SSL_CERT_PATH
+   ```
+
+## Support
+
+For issues and support:
+1. Check logs in `/var/log/keycloak/`
+2. Review monitoring dashboards
+3. Check container health status
+4. Verify configuration values

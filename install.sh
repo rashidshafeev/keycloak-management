@@ -57,7 +57,7 @@ fi
 # Create installation directory
 mkdir -p "${INSTALL_DIR}"
 
-# Clone or update repository first
+# Clone or update repository
 if [ "$NO_CLONE" != "true" ]; then
     if [ ! -d "${INSTALL_DIR}/.git" ]; then
         echo "Cloning repository..."
@@ -78,7 +78,7 @@ if [ "$NO_CLONE" != "true" ]; then
     fi
 fi
 
-# Now that we have cloned the repo, set up the scripts directory path
+# Set up scripts directory path
 SCRIPTS_DIR="${INSTALL_DIR}/scripts/install"
 
 # Change to installation directory
@@ -87,16 +87,11 @@ cd "${INSTALL_DIR}"
 # Source common functions
 source "${SCRIPTS_DIR}/common.sh"
 
-# Install dependencies
-source "${SCRIPTS_DIR}/dependencies.sh"
-
-# Then load other modules in specific order
+# Load modules in specific order
 modules=(
     "cleanup.sh"
     "command.sh"
     "dependencies.sh"
-    "environment.sh"
-    "system_checks.sh"
     "virtualenv.sh"
 )
 
@@ -134,17 +129,22 @@ fi
 trap 'handle_error $? "Installation failed" "main"' ERR
 
 # Run installation steps
-check_root
-check_system
 install_dependencies
-setup_environment
+setup_virtualenv
 create_command
 
 # Remove error trap
 trap - ERR
 
 echo "Installation completed successfully!"
-echo "You can now use 'keycloak-deploy' command to manage your Keycloak deployment."
+echo "You can now use 'kcmanage' command to manage your Keycloak deployment."
+echo
+echo "Available commands:"
+echo "  kcmanage setup     - Initial setup and configuration"
+echo "  kcmanage deploy    - Deploy Keycloak"
+echo "  kcmanage status    - Check deployment status"
+echo "  kcmanage backup    - Create a backup"
+echo "  kcmanage restore   - Restore from backup"
 echo
 echo "To reset the installation, run:"
 echo "  $0 --reset"
