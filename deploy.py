@@ -6,7 +6,6 @@ from pathlib import Path
 from src.deployment.orchestrator import DeploymentOrchestrator
 from src.utils.system_checks import ensure_system_ready
 from src.utils.environment import EnvironmentSetup, load_environment
-from src.utils.dependencies import DependencyManager
 
 def init_environment():
     """Initialize or load environment configuration"""
@@ -48,16 +47,12 @@ def cli():
 def setup():
     """Initial setup and configuration"""
     try:
-        # Install dependencies first
-        click.echo("Installing dependencies...")
-        dep_manager = DependencyManager()
-        if not dep_manager.setup_all():
-            raise click.ClickException("Failed to install dependencies")
-        
-        # Check system requirements after dependencies are installed
+        # Check system requirements and install dependencies if needed
+        click.echo("Checking system requirements and installing dependencies...")
         ensure_system_ready()
         
         # Set up environment
+        click.echo("Setting up environment...")
         env_setup = EnvironmentSetup()
         if env_setup.setup():
             click.echo("Setup completed successfully!")
@@ -72,7 +67,7 @@ def setup():
 def deploy():
     """Deploy Keycloak with all required components"""
     try:
-        # Check system requirements
+        # Check system requirements and install dependencies if needed
         ensure_system_ready()
         
         # Initialize or load environment

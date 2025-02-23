@@ -1,9 +1,8 @@
 import os
 import subprocess
-import sys
 import logging
-from typing import List, Dict
-from pathlib import Path
+import platform
+from typing import List, Dict, Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -30,50 +29,23 @@ class DependencyManager:
             if check:
                 raise
 
-    def install_system_packages(self) -> bool:
-        """Install required system packages"""
-        if not self.is_debian:
-            logger.warning("Non-Debian system detected. Package installation may not work.")
-            return False
-
-        packages = [
-            'curl',
-            'wget',
-            'git',
-            'build-essential',
-            'python3-dev',
-            'python3-pip',
-            'python3-venv',
-            'libssl-dev',
-            'libffi-dev',
-            'iptables',
-            'ufw'
-        ]
-
+    def check_docker(self) -> Tuple[bool, str]:
+        """Check if Docker is installed and running"""
         try:
-            # Update package list
-            self._run_command(['apt-get', 'update'])
-            
-            # Install packages
-            self._run_command(['apt-get', 'install', '-y'] + packages)
-            
-            return True
-        except Exception as e:
-            logger.error(f"Failed to install system packages: {str(e)}")
-            return False
+            # Check if docker command exists
+            self._run_command(["docker", "--version"], check=True)
+            # Check if docker daemon is running (not needed inside container)
+            if not self.is_container:
+                self._run_command(["docker", "info"], check=True)
+            return True, "Docker is installed"
+        except subprocess.CalledProcessError:
+            return False, "Docker is not running"
+        except FileNotFoundError:
+            return False, "Docker is not installed"
 
     def install_docker(self) -> bool:
-        """Install Docker if not in container"""
-        if self.is_container:
-            logger.info("Running in container, skipping Docker installation")
-            return True
-
+        """Install Docker"""
         try:
-            # Check if Docker is already installed
-            if self._run_command(['docker', '--version'], check=False).returncode == 0:
-                logger.info("Docker is already installed")
-                return True
-
             # Remove old Docker packages if they exist
             old_packages = ['docker.io', 'docker-doc', 'docker-compose', 'podman-docker', 'containerd', 'runc']
             for pkg in old_packages:
@@ -115,70 +87,94 @@ class DependencyManager:
                              'docker-buildx-plugin',
                              'docker-compose-plugin'])
 
-            # Start and enable Docker service
-            self._run_command(['systemctl', 'start', 'docker'])
-            self._run_command(['systemctl', 'enable', 'docker'])
-
-            # Configure Docker network
-            self._run_command(['docker', 'network', 'create', 'keycloak-network'])
+            # Start and enable Docker service (not needed inside container)
+            if not self.is_container:
+                self._run_command(['systemctl', 'start', 'docker'])
+                self._run_command(['systemctl', 'enable', 'docker'])
 
             return True
         except Exception as e:
             logger.error(f"Failed to install Docker: {str(e)}")
             return False
 
-    def configure_firewall(self) -> bool:
-        """Configure firewall rules"""
+    def check_and_install_system_packages(self) -> bool:
+        """Check and install required system packages"""
+        if not self.is_debian:
+            logger.warning("Non-Debian system detected. Package installation may not work.")
+            return False
+
+        required_packages = {
+            'base': [
+                'curl',
+                'wget',
+                'git',
+                'build-essential',
+                'python3-dev',
+                'python3-pip',
+                'python3-venv',
+                'libssl-dev',
+                'libffi-dev',
+            ],
+            'security': [
+                'iptables',
+                'ufw',
+            ],
+            'docker': [
+                'docker-ce-cli'  # Only Docker client inside container
+            ]
+        }
+
         try:
-            # Check if UFW is installed
-            if self._run_command(['which', 'ufw'], check=False).returncode != 0:
-                logger.error("UFW is not installed")
-                return False
-
-            # Allow necessary ports
-            ports = ['80/tcp', '443/tcp', '8080/tcp', '8443/tcp']
-            for port in ports:
-                self._run_command(['ufw', 'allow', port])
-
-            # Configure Docker rules
-            docker_rules = """
-[Docker]
-title=Docker
-description=Docker container engine
-ports=2375,2376,2377,7946/tcp|7946/udp|4789/udp
-"""
-            docker_rules_file = Path('/etc/ufw/applications.d/docker')
-            docker_rules_file.write_text(docker_rules)
-
-            # Reload UFW
-            self._run_command(['ufw', 'reload'])
+            # Update package list
+            self._run_command(['apt-get', 'update'])
+            
+            # Install packages
+            all_packages = []
+            for category, packages in required_packages.items():
+                all_packages.extend(packages)
+            
+            self._run_command(['apt-get', 'install', '-y'] + all_packages)
+            
+            # Install Docker if needed
+            docker_ok, _ = self.check_docker()
+            if not docker_ok:
+                if not self.install_docker():
+                    return False
 
             return True
         except Exception as e:
-            logger.error(f"Failed to configure firewall: {str(e)}")
+            logger.error(f"Failed to install system packages: {str(e)}")
             return False
+
+    def check_requirements(self) -> List[str]:
+        """Check all requirements and return list of issues"""
+        issues = []
+
+        # Check Docker
+        docker_ok, docker_msg = self.check_docker()
+        if not docker_ok:
+            issues.append(f"Docker issue: {docker_msg}")
+
+        return issues
 
     def setup_all(self) -> bool:
         """Set up all dependencies"""
-        success = True
-        
-        # Install system packages
-        logger.info("Installing system packages...")
-        if not self.install_system_packages():
-            success = False
-            logger.error("Failed to install system packages")
+        # First check requirements
+        issues = self.check_requirements()
+        if issues:
+            logger.info("Found missing dependencies, attempting to install...")
+            
+        # Install all required packages
+        if not self.check_and_install_system_packages():
+            logger.error("Failed to install required packages")
+            return False
 
-        # Install Docker if needed
-        if not self.is_container:
-            logger.info("Installing Docker...")
-            if not self.install_docker():
-                success = False
-                logger.error("Failed to install Docker")
+        # Verify installation
+        issues = self.check_requirements()
+        if issues:
+            logger.error("Dependencies still missing after installation:")
+            for issue in issues:
+                logger.error(f"  - {issue}")
+            return False
 
-        # Configure firewall
-        logger.info("Configuring firewall...")
-        if not self.configure_firewall():
-            success = False
-            logger.error("Failed to configure firewall")
-
-        return success
+        return True
