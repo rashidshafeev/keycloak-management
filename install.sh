@@ -136,7 +136,7 @@ fi
 trap 'handle_error $? "Installation failed" "main"' ERR
 
 # Run installation steps
-install_dependencies
+# install_dependencies
 setup_virtualenv
 create_command
 

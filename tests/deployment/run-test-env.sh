@@ -58,7 +58,7 @@ if [ "$REBUILD_ALL" = true ]; then
     echo "Performing full rebuild..."
     
     # Clean up everything
-    docker-compose -f docker-compose.test.yml down -v --progress=plain
+    docker-compose -f docker-compose.test.yml down -v
     docker system prune -f
     
     # Build and start from scratch

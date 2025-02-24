@@ -18,7 +18,7 @@ VENV_DIR="\${INSTALL_DIR}/venv"
 source "\${VENV_DIR}/bin/activate"
 
 # Execute the Python script with all arguments
-python "\${INSTALL_DIR}/deploy.py" "\$@"
+python "\${INSTALL_DIR}/kcmanage.py" "\$@"
 
 # Deactivate virtual environment
 deactivate
@@ -32,3 +32,5 @@ EOL
         echo "Command already created, skipping..."
     fi
 }
+
+create_command

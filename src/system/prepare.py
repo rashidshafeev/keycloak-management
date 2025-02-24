@@ -1,5 +1,6 @@
 from ..deployment.base import DeploymentStep
 import subprocess
+import logging
 
 class SystemPreparationStep(DeploymentStep):
     def __init__(self):
@@ -26,10 +27,29 @@ class SystemPreparationStep(DeploymentStep):
             return False
 
     def execute(self) -> bool:
+        """Prepare the system by installing required packages"""
         try:
-            subprocess.run(["apt-get", "update"], check=True)
-            subprocess.run(["apt-get", "install", "-y"] + self.packages, check=True)
+            # Check and install dependencies
+            for pkg in self.packages:
+                if not self._is_package_installed(pkg):
+                    self._install_package(pkg)
+
             return True
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Failed to prepare system: {e}")
+            logging.error(f"Failed to prepare system: {e}")
             return False
+
+    def _is_package_installed(self, package: str) -> bool:
+        """Check if a package is installed"""
+        result = subprocess.run(
+            ["dpkg", "-l", package],
+            capture_output=True,
+            text=True
+        )
+        return "ii" in result.stdout
+
+    def _install_package(self, package: str) -> None:
+        """Install a package using apt-get"""
+        subprocess.run(["apt-get", "update"], check=True)
+        subprocess.run(["apt-get", "install", "-y", package], check=True)
+        logging.info(f"Installed package: {package}")

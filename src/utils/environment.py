@@ -1,95 +1,85 @@
 import os
 import logging
+import socket
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from dotenv import load_dotenv
-from .dependencies import DependencyManager
 
 logger = logging.getLogger(__name__)
 
-class EnvironmentSetup:
-    """Handle environment setup and configuration"""
+class EnvironmentManager:
+    """Utility for managing environment variables"""
     
     def __init__(self):
-        self.dep_manager = DependencyManager()
         self.env_file = Path('.env')
-        self.required_vars = [
-            'KEYCLOAK_DOMAIN',
-            'KEYCLOAK_ADMIN_EMAIL',
-            'KEYCLOAK_ADMIN_PASSWORD',
-            'DB_PASSWORD'
-        ]
 
-    def setup(self) -> bool:
-        """Set up environment configuration"""
-        try:
-            # Check Docker availability
-            if not self.dep_manager.check_docker()[0]:
-                logger.error("Docker is not available")
-                return False
-
-            # Load existing environment if available
-            if self.env_file.exists():
-                env_vars = load_environment()
-                if self._validate_environment(env_vars):
-                    logger.info("Environment already configured")
-                    return True
-
-            # Create new environment configuration
-            env_vars = self._create_environment()
-            if not env_vars:
-                return False
-
-            # Save environment configuration
-            self._save_environment(env_vars)
+    def get_or_prompt_vars(self, required_vars: List[Dict]) -> Dict[str, str]:
+        """
+        Get required variables from environment or prompt for them
+        
+        Args:
+            required_vars: List of dictionaries containing variable configurations
+                Example: [
+                    {
+                        'name': 'KEYCLOAK_PORT',
+                        'prompt': 'Enter Keycloak port',
+                        'default': '8443'
+                    },
+                    {
+                        'name': 'KEYCLOAK_ADMIN_EMAIL',
+                        'prompt': 'Enter admin email',
+                        'default': f'admin@{socket.getfqdn()}'
+                    }
+                ]
+        
+        Returns:
+            Dictionary with variable names and their values
+        """
+        env_vars = {}
+        
+        # Load existing environment if available
+        if self.env_file.exists():
+            load_dotenv()
+        
+        # Check each required variable
+        for var_config in required_vars:
+            var_name = var_config['name']
+            value = os.getenv(var_name)
             
-            return True
-        except Exception as e:
-            logger.error(f"Failed to set up environment: {str(e)}")
-            return False
-
-    def _validate_environment(self, env_vars: Dict[str, str]) -> bool:
-        """Validate that all required environment variables are present"""
-        missing_vars = [var for var in self.required_vars if var not in env_vars]
-        if missing_vars:
-            logger.error(f"Missing required environment variables: {', '.join(missing_vars)}")
-            return False
-        return True
-
-    def _create_environment(self) -> Optional[Dict[str, str]]:
-        """Create new environment configuration"""
-        try:
-            # Here you would implement logic to gather environment variables
-            # This could involve prompting the user, generating values, etc.
-            env_vars = {
-                'KEYCLOAK_DOMAIN': 'localhost',
-                'KEYCLOAK_ADMIN_EMAIL': 'admin@example.com',
-                'KEYCLOAK_ADMIN_PASSWORD': 'admin123',
-                'DB_PASSWORD': 'db123'
-            }
+            if not value:
+                # Variable not found in environment, prompt for it
+                default = var_config.get('default')
+                prompt = f"{var_config['prompt']}"
+                if default:
+                    prompt += f" [{default}]"
+                prompt += ": "
+                
+                value = input(prompt)
+                if not value and default:
+                    value = default
+                
+                # Save to environment file for future use
+                self._append_to_env_file(var_name, value)
             
-            return env_vars
-        except Exception as e:
-            logger.error(f"Failed to create environment configuration: {str(e)}")
-            return None
+            env_vars[var_name] = value
+        
+        return env_vars
 
-    def _save_environment(self, env_vars: Dict[str, str]) -> None:
-        """Save environment configuration to file"""
+    def _append_to_env_file(self, key: str, value: str) -> None:
+        """Append a new variable to the .env file"""
         try:
-            with open(self.env_file, 'w') as f:
-                for key, value in env_vars.items():
-                    f.write(f"{key}={value}\n")
+            mode = 'a' if self.env_file.exists() else 'w'
+            with open(self.env_file, mode) as f:
+                f.write(f"{key}={value}\n")
+            
+            # Secure the .env file
+            self.env_file.chmod(0o600)
         except Exception as e:
-            logger.error(f"Failed to save environment configuration: {str(e)}")
+            logger.error(f"Failed to save variable to environment file: {str(e)}")
             raise
 
-def load_environment() -> Dict[str, str]:
-    """Load environment variables from .env file"""
-    if not load_dotenv():
-        raise Exception("Failed to load environment configuration")
-    
-    env_vars = {}
-    for key in os.environ:
-        env_vars[key] = os.environ[key]
-    
-    return env_vars
+def get_environment_manager() -> EnvironmentManager:
+    """Get or create an EnvironmentManager instance"""
+    if not hasattr(get_environment_manager, 'instance'):
+        get_environment_manager.instance = EnvironmentManager()
+    return get_environment_manager.instance
