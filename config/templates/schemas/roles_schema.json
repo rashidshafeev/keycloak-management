@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["roles"],
+  "properties": {
+    "roles": {
+      "type": "object",
+      "properties": {
+        "realm": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Role name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Role description"
+              },
+              "composite": {
+                "type": "boolean",
+                "description": "Whether this is a composite role"
+              },
+              "composites": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "List of roles to include in this composite role"
+              },
+              "attributes": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "description": "Custom attributes for the role"
+              }
+            }
+          }
+        },
+        "client": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Role name"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Role description"
+                },
+                "composite": {
+                  "type": "boolean",
+                  "description": "Whether this is a composite role"
+                },
+                "composites": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "List of roles to include in this composite role"
+                },
+                "attributes": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": "Custom attributes for the role"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,105 @@
+# Authentication Configuration
+authentication:
+  # Browser Flow
+  browser_flow:
+    alias: "browser"
+    description: "Browser based authentication"
+    providerId: "basic-flow"
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: "auth-cookie"
+        requirement: "ALTERNATIVE"
+        priority: 10
+        
+      - authenticator: "identity-provider-redirector"
+        requirement: "ALTERNATIVE"
+        priority: 20
+        
+      - flowAlias: "forms"
+        requirement: "ALTERNATIVE"
+        priority: 30
+        
+  # Forms Flow
+  forms_flow:
+    alias: "forms"
+    description: "Username, password, otp and other auth forms."
+    providerId: "basic-flow"
+    topLevel: false
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: "auth-username-password-form"
+        requirement: "REQUIRED"
+        priority: 10
+        
+      - authenticator: "auth-otp-form"
+        requirement: "CONDITIONAL"
+        priority: 20
+        
+  # Registration Flow
+  registration_flow:
+    alias: "registration"
+    description: "Registration flow"
+    providerId: "basic-flow"
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: "registration-page-form"
+        requirement: "REQUIRED"
+        priority: 10
+        
+      - authenticator: "registration-user-creation"
+        requirement: "REQUIRED"
+        priority: 20
+        
+      - authenticator: "registration-profile-action"
+        requirement: "REQUIRED"
+        priority: 30
+        
+      - authenticator: "registration-email-action"
+        requirement: "REQUIRED"
+        priority: 40
+        
+  # First Broker Login
+  first_broker_login:
+    alias: "first broker login"
+    description: "Actions taken after first social login"
+    providerId: "basic-flow"
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: "idp-confirm-link"
+        requirement: "REQUIRED"
+        priority: 10
+        
+      - authenticator: "idp-email-verification"
+        requirement: "ALTERNATIVE"
+        priority: 20
+        
+      - authenticator: "idp-username-password-form"
+        requirement: "ALTERNATIVE"
+        priority: 30
+        
+  # Reset Credentials
+  reset_credentials:
+    alias: "reset credentials"
+    description: "Reset credentials for a user"
+    providerId: "basic-flow"
+    topLevel: true
+    builtIn: false
+    authenticationExecutions:
+      - authenticator: "reset-credentials-choose-user"
+        requirement: "REQUIRED"
+        priority: 10
+        
+      - authenticator: "reset-credential-email"
+        requirement: "REQUIRED"
+        priority: 20
+        
+      - authenticator: "reset-password"
+        requirement: "REQUIRED"
+        priority: 30
+        
+      - authenticator: "reset-otp"
+        requirement: "CONDITIONAL"
+        priority: 40

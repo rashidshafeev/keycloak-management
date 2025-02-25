@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  vps-test:
+    build:
+      context: ../..
+      dockerfile: tests/deployment/Dockerfile.test
+    environment:
+      - GIT_USERNAME=${GIT_USERNAME}
+      - GIT_PASSWORD=${GIT_PASSWORD}
+    volumes:
+      - ./test-entrypoint.sh:/root/test-entrypoint.sh
+      - ../../install.sh:/root/install.sh
+      - ../../.env.test:/root/.env.test
+    privileged: true
+    command: ["/bin/bash", "/root/test-entrypoint.sh"]

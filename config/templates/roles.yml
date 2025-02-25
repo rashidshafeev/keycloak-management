@@ -1,0 +1,49 @@
+# Role Configuration
+roles:
+  # Realm Roles
+  realm:
+    - name: "user"
+      description: "Default role for all users"
+      composite: false
+      
+    - name: "admin"
+      description: "Administrator role"
+      composite: true
+      composites:
+        - "user"
+        - "manage-users"
+        - "view-events"
+        
+    - name: "super-admin"
+      description: "Super administrator role"
+      composite: true
+      composites:
+        - "admin"
+        - "manage-realm"
+        - "manage-clients"
+        
+    - name: "service-account"
+      description: "Role for service accounts"
+      composite: false
+      
+  # Client Roles (per client)
+  client:
+    fawz-web:
+      - name: "app-user"
+        description: "Regular application user"
+        
+      - name: "premium-user"
+        description: "Premium application user"
+        composite: true
+        composites:
+          - "app-user"
+          
+    fawz-admin:
+      - name: "dashboard-admin"
+        description: "Admin dashboard access"
+        
+      - name: "user-manager"
+        description: "Can manage users"
+        
+      - name: "content-manager"
+        description: "Can manage content"

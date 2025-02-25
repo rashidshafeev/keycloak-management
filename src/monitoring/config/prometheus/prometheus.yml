@@ -1,0 +1,16 @@
+global:
+  scrape_interval: ${PROMETHEUS_SCRAPE_INTERVAL}
+  evaluation_interval: ${PROMETHEUS_EVAL_INTERVAL}
+
+rule_files:
+  - 'alerts/*.yml'
+
+scrape_configs:
+  - !include scrape_configs.yml
+
+storage:
+  tsdb:
+    path: /var/lib/prometheus
+    retention:
+      time: ${PROMETHEUS_RETENTION_TIME}
+    wal_compression: true

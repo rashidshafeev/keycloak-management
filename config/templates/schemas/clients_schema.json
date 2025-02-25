@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["clients"],
+  "properties": {
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clientId", "name", "protocol"],
+        "properties": {
+          "clientId": {
+            "type": "string",
+            "description": "Client identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the client"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the client"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": ["openid-connect", "saml"],
+            "description": "Protocol used by the client"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the client is enabled"
+          },
+          "clientAuthenticatorType": {
+            "type": "string",
+            "enum": ["client-secret", "client-jwt"],
+            "default": "client-secret",
+            "description": "Client authentication type"
+          },
+          "secret": {
+            "type": "string",
+            "description": "Client secret (if using client-secret auth)"
+          },
+          "redirectUris": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Valid redirect URIs"
+          },
+          "webOrigins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Allowed CORS origins"
+          },
+          "standardFlowEnabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable OAuth2 Authorization Code Flow"
+          },
+          "implicitFlowEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable OAuth2 Implicit Flow"
+          },
+          "directAccessGrantsEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable Direct Access Grants"
+          },
+          "serviceAccountsEnabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable Service Accounts"
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom attributes"
+          },
+          "defaultClientScopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Default client scopes"
+          },
+          "optionalClientScopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional client scopes"
+          }
+        }
+      }
+    }
+  }
+}

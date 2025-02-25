@@ -1,0 +1,10 @@
+FROM debian:bullseye-slim
+
+# Install minimal requirements to get started
+RUN apt-get update && apt-get install -y \
+    sudo \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+CMD ["/bin/bash"]

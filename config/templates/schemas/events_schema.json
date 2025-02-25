@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["events"],
+  "properties": {
+    "events": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable event logging"
+        },
+        "adminEventsEnabled": {
+          "type": "boolean",
+          "description": "Enable admin event logging"
+        },
+        "adminEventsDetailsEnabled": {
+          "type": "boolean",
+          "description": "Include details in admin events"
+        },
+        "eventsExpiration": {
+          "type": "integer",
+          "description": "Time in seconds before events expire"
+        },
+        "eventsListeners": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["jboss-logging", "email", "webhook"]
+          },
+          "description": "Event listeners to enable"
+        },
+        "enabledEventTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "LOGIN",
+              "LOGIN_ERROR",
+              "REGISTER",
+              "REGISTER_ERROR",
+              "LOGOUT",
+              "UPDATE_PROFILE",
+              "UPDATE_PASSWORD",
+              "UPDATE_EMAIL",
+              "UPDATE_TOTP",
+              "REMOVE_TOTP",
+              "VERIFY_EMAIL",
+              "REMOVE_ACCOUNT"
+            ]
+          },
+          "description": "Event types to log"
+        },
+        "webhooks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url", "events"],
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Webhook URL"
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Events to send to this webhook"
+              },
+              "headers": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Custom headers to send with webhook"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

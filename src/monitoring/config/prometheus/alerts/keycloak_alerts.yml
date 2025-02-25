@@ -1,0 +1,38 @@
+groups:
+  - name: keycloak_alerts
+    rules:
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(keycloak_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High response time
+          description: Keycloak response time is above 2 seconds for 5 minutes
+
+      - alert: HighErrorRate
+        expr: rate(keycloak_failed_login_attempts[5m]) > 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High error rate
+          description: Keycloak login failure rate is above 10 per minute
+
+      - alert: HighActiveSessionCount
+        expr: keycloak_active_sessions > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High session count
+          description: Number of active Keycloak sessions is above 1000
+
+      - alert: JVMHighMemoryUsage
+        expr: jvm_memory_bytes_used / jvm_memory_bytes_max * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: High JVM memory usage
+          description: JVM memory usage is above 85%

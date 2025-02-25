@@ -1,0 +1,46 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Keycloak Overview",
+    "tags": ["keycloak"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Active Sessions",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "targets": [{
+          "expr": "keycloak_active_sessions",
+          "legendFormat": "Active Sessions"
+        }]
+      },
+      {
+        "title": "Login Attempts",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "targets": [{
+          "expr": "rate(keycloak_logins[5m])",
+          "legendFormat": "Login Rate"
+        }]
+      },
+      {
+        "title": "Response Time",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "targets": [{
+          "expr": "histogram_quantile(0.95, rate(keycloak_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "95th Percentile"
+        }]
+      },
+      {
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "targets": [{
+          "expr": "rate(keycloak_failed_login_attempts[5m])",
+          "legendFormat": "Error Rate"
+        }]
+      }
+    ]
+  }
+}

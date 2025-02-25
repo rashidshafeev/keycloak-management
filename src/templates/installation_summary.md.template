@@ -1,0 +1,91 @@
+# Keycloak Installation Summary
+Generated on: ${INSTALL_DATE}
+
+## Access Information
+
+### Keycloak
+- Admin Console: https://${KEYCLOAK_HOST}:${KEYCLOAK_PORT}/auth/admin
+- Admin Username: ${KEYCLOAK_ADMIN}
+- Admin Password: ${KEYCLOAK_ADMIN_PASSWORD}
+- Public Endpoint: https://${KEYCLOAK_HOST}:${KEYCLOAK_PORT}/auth
+- Metrics Endpoint: http://${KEYCLOAK_HOST}:${KEYCLOAK_PORT}/auth/metrics
+
+### Monitoring
+
+#### Prometheus
+- Dashboard: http://${PROMETHEUS_HOST}:9090
+- Data Directory: ${PROMETHEUS_DATA_DIR}
+- Configuration: /etc/prometheus/prometheus.yml
+- Alert Rules: /etc/prometheus/alerts/
+- Status: http://${PROMETHEUS_HOST}:9090/status
+
+#### Grafana
+- Dashboard: http://${GRAFANA_HOST}:3000
+- Admin Username: ${GRAFANA_ADMIN_USER}
+- Admin Password: ${GRAFANA_ADMIN_PASSWORD}
+- Data Directory: /var/lib/grafana
+- Configuration: /etc/grafana/grafana.ini
+
+##### Preconfigured Dashboards
+1. Keycloak Overview: http://${GRAFANA_HOST}:3000/d/keycloak_overview
+2. System Overview: http://${GRAFANA_HOST}:3000/d/system_overview
+
+##### Alert Notifications
+- Email: ${GRAFANA_ALERT_EMAIL}
+- Slack Channel: ${GRAFANA_SLACK_CHANNEL}
+
+### Security
+
+#### Wazuh
+- Manager URL: https://${WAZUH_MANAGER_IP}:55000
+- Agent Name: ${WAZUH_AGENT_NAME}
+- Agent ID: ${WAZUH_AGENT_ID}
+- Configuration: /var/ossec/etc/ossec.conf
+
+#### Firewall
+- Allowed Ports: ${FIREWALL_ALLOWED_PORTS}
+- Admin IPs: ${FIREWALL_ADMIN_IPS}
+- Backup Location: /opt/fawz/keycloak/firewall/backup
+
+### Database
+- Host: ${DB_HOST}
+- Port: ${DB_PORT}
+- Database: ${DB_NAME}
+- Username: ${DB_USER}
+- Password: ${DB_PASSWORD}
+- Backup Location: ${BACKUP_STORAGE_PATH}
+
+### SSL Certificates
+- Certificate Path: ${SSL_CERT_PATH}
+- Key Path: ${SSL_KEY_PATH}
+- Expiry Date: ${SSL_EXPIRY_DATE}
+
+## Important Directories
+- Installation Root: ${INSTALL_ROOT}
+- Configuration: ${CONFIG_DIR}
+- Logs: ${LOG_DIR}
+- Backups: ${BACKUP_STORAGE_PATH}
+- Docker Volumes: ${DOCKER_VOLUMES_PATH}
+
+## Service Status
+${SERVICE_STATUS}
+
+## Next Steps
+1. Test Keycloak login at https://${KEYCLOAK_HOST}:${KEYCLOAK_PORT}/auth/admin
+2. Check Grafana dashboards at http://${GRAFANA_HOST}:3000
+3. Verify Prometheus metrics at http://${PROMETHEUS_HOST}:9090
+4. Review Wazuh security alerts at https://${WAZUH_MANAGER_IP}:55000
+
+## Backup Information
+- Backup Schedule: Daily at ${BACKUP_TIME}
+- Retention Period: ${BACKUP_RETENTION_DAYS} days
+- Backup Location: ${BACKUP_STORAGE_PATH}
+- Last Backup: ${LAST_BACKUP_DATE}
+
+## Support
+- Log Files: ${LOG_DIR}
+- Debug Mode: ${DEBUG_MODE}
+- Support Email: ${SUPPORT_EMAIL}
+
+## Additional Notes
+${ADDITIONAL_NOTES}

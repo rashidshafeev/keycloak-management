@@ -1,0 +1,112 @@
+# Security Configuration
+security:
+  # Password Policy
+  passwordPolicy:
+    - type: "length"
+      value: 8
+      description: "Minimum password length"
+    
+    - type: "digits"
+      value: 1
+      description: "At least one digit"
+    
+    - type: "lowerCase"
+      value: 1
+      description: "At least one lowercase letter"
+    
+    - type: "upperCase"
+      value: 1
+      description: "At least one uppercase letter"
+    
+    - type: "specialChars"
+      value: 1
+      description: "At least one special character"
+    
+    - type: "notUsername"
+      description: "Password cannot be the same as username"
+    
+    - type: "passwordHistory"
+      value: 3
+      description: "Cannot reuse last 3 passwords"
+
+  # Brute Force Protection
+  bruteForce:
+    enabled: true
+    maxFailureWaitSeconds: 900        # 15 minutes
+    waitIncrementSeconds: 60          # 1 minute
+    quickLoginCheckMilliSeconds: 1000  # 1 second
+    minimumQuickLoginWaitSeconds: 60  # 1 minute
+    maxDeltaTimeSeconds: 43200        # 12 hours
+    failureFactor: 3                  # Max failed attempts
+
+  # Session Settings
+  session:
+    # SSO Session
+    ssoSessionIdleTimeout: 1800       # 30 minutes
+    ssoSessionMaxLifespan: 36000      # 10 hours
+    ssoSessionIdleTimeoutRememberMe: 172800  # 2 days
+    ssoSessionMaxLifespanRememberMe: 864000  # 10 days
+    
+    # Offline Session
+    offlineSessionIdleTimeout: 2592000  # 30 days
+    offlineSessionMaxLifespan: 5184000  # 60 days
+    
+    # Token Timeouts
+    accessTokenLifespan: 300           # 5 minutes
+    accessTokenLifespanImplicit: 900   # 15 minutes
+    clientSessionIdleTimeout: 1800     # 30 minutes
+    clientSessionMaxLifespan: 36000    # 10 hours
+
+  # SSL Requirements
+  ssl:
+    required: "external"  # none, external, or all
+    excludedPaths:
+      - "/health"
+      - "/metrics"
+    
+  # Headers
+  headers:
+    # Content Security Policy
+    contentSecurityPolicy: "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
+    
+    # X-Frame-Options
+    xFrameOptions: "SAMEORIGIN"
+    
+    # Other Security Headers
+    xContentTypeOptions: "nosniff"
+    xRobotsTag: "none"
+    xXSSProtection: "1; mode=block"
+    strictTransportSecurity: "max-age=31536000; includeSubDomains"
+
+  # WebAuthn/2FA
+  webAuthn:
+    enabled: true
+    passwordless: false
+    attestationConveyancePreference: "none"
+    authenticatorAttachment: "cross-platform"
+    requireResidentKey: "false"
+    userVerificationRequirement: "preferred"
+    signatureAlgorithms:
+      - "ES256"
+      - "RS256"
+    
+  # OAuth/OpenID Settings
+  oauth:
+    pkceRequired: true
+    proofKeyForCodeExchange: "S256"
+    clientCredentialsProviderEnabled: false
+    implicitFlowEnabled: false
+    standardFlowEnabled: true
+    directAccessGrantsEnabled: true
+    serviceAccountsEnabled: true
+    
+  # Cipher Suites
+  cipherSuites:
+    - "TLS_AES_128_GCM_SHA256"
+    - "TLS_AES_256_GCM_SHA384"
+    - "TLS_CHACHA20_POLY1305_SHA256"
+    
+  # TLS Versions
+  tlsVersions:
+    - "TLSv1.2"
+    - "TLSv1.3"

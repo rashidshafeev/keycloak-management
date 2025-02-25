@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["authentication"],
+  "properties": {
+    "authentication": {
+      "type": "object",
+      "properties": {
+        "flows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["alias", "type", "executions"],
+            "properties": {
+              "alias": {
+                "type": "string",
+                "description": "Name of the authentication flow"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["basic-flow", "client-flow"],
+                "description": "Type of authentication flow"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of the flow"
+              },
+              "executions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["provider", "requirement"],
+                  "properties": {
+                    "provider": {
+                      "type": "string",
+                      "description": "Authentication provider"
+                    },
+                    "requirement": {
+                      "type": "string",
+                      "enum": ["REQUIRED", "ALTERNATIVE", "CONDITIONAL", "DISABLED"],
+                      "description": "Requirement level"
+                    },
+                    "priority": {
+                      "type": "integer",
+                      "description": "Priority within the flow"
+                    },
+                    "config": {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "description": "Provider-specific configuration"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requiredActions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["alias", "enabled"],
+            "properties": {
+              "alias": {
+                "type": "string",
+                "description": "Action identifier"
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name"
+              },
+              "enabled": {
+                "type": "boolean",
+                "description": "Whether the action is enabled"
+              },
+              "defaultAction": {
+                "type": "boolean",
+                "description": "Whether this is a default action"
+              },
+              "priority": {
+                "type": "integer",
+                "description": "Priority of the action"
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Action-specific configuration"
+              }
+            }
+          }
+        },
+        "otp": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable OTP support"
+            },
+            "type": {
+              "type": "string",
+              "enum": ["totp", "hotp"],
+              "description": "OTP type"
+            },
+            "algorithm": {
+              "type": "string",
+              "enum": ["HmacSHA1", "HmacSHA256", "HmacSHA512"],
+              "description": "HMAC algorithm"
+            },
+            "digits": {
+              "type": "integer",
+              "enum": [6, 8],
+              "description": "Number of digits"
+            },
+            "lookAheadWindow": {
+              "type": "integer",
+              "description": "Look ahead window size"
+            },
+            "period": {
+              "type": "integer",
+              "description": "Period in seconds (for TOTP)"
+            },
+            "initialCounter": {
+              "type": "integer",
+              "description": "Initial counter (for HOTP)"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,198 +1,157 @@
 #!/bin/bash
 
-# Configuration
-REPO_URL="https://github.com/yourusername/keycloak-management.git"
-INSTALL_DIR="/opt/fawz/keycloak"
-VENV_DIR="${INSTALL_DIR}/venv"
-LOG_FILE="/var/log/keycloak-install.log"
-BACKUP_DIR="/opt/fawz/backup"
-STATE_FILE="/opt/fawz/.install_state"
+# Check root first
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root" 
+    exit 1
+fi
 
-# Initialize state tracking
-declare -A completed_steps=()
-
-# Logging setup
-setup_logging() {
-    mkdir -p "$(dirname "$LOG_FILE")"
-    exec 1> >(tee -a "$LOG_FILE")
-    exec 2> >(tee -a "$LOG_FILE" >&2)
-    echo "Starting installation at $(date)"
-}
-
-# State management
-save_state() {
-    local step=$1
-    completed_steps[$step]=1
-    mkdir -p "$(dirname "$STATE_FILE")"
-    printf "%s\n" "${!completed_steps[@]}" > "$STATE_FILE"
-}
-
-load_state() {
-    if [[ -f "$STATE_FILE" ]]; then
-        while IFS= read -r step; do
-            completed_steps[$step]=1
-        done < "$STATE_FILE"
-    fi
-}
-
-# Cleanup functions
-cleanup_repository() {
-    echo "Cleaning up repository..."
-    if [[ -d "$INSTALL_DIR" ]]; then
-        rm -rf "$INSTALL_DIR"
-    fi
-}
-
-cleanup_venv() {
-    echo "Cleaning up virtual environment..."
-    if [[ -d "$VENV_DIR" ]]; then
-        rm -rf "$VENV_DIR"
-    fi
-}
-
-cleanup_command() {
-    echo "Removing deployed command..."
-    if [[ -f "/usr/local/bin/keycloak-deploy" ]]; then
-        rm -f "/usr/local/bin/keycloak-deploy"
-    fi
-}
-
-backup_existing() {
-    if [[ -d "$INSTALL_DIR" ]]; then
-        echo "Backing up existing installation..."
-        mkdir -p "$BACKUP_DIR"
-        local backup_name="keycloak_backup_$(date +%Y%m%d_%H%M%S)"
-        cp -r "$INSTALL_DIR" "$BACKUP_DIR/$backup_name"
-        echo "Backup created at $BACKUP_DIR/$backup_name"
-    fi
-}
-
-# Main installation steps
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        echo "This script must be run as root" 
-        exit 1
-    fi
-}
-
-install_dependencies() {
-    if [[ -z "${completed_steps[dependencies]}" ]]; then
-        echo "Installing dependencies..."
-        apt-get update
-        apt-get install -y python3-venv python3-pip git
-        save_state "dependencies"
-    else
-        echo "Dependencies already installed, skipping..."
-    fi
-}
-
-clone_repository() {
-    if [[ -z "${completed_steps[repository]}" ]]; then
-        echo "Setting up repository..."
-        mkdir -p "$INSTALL_DIR"
-        cd "$INSTALL_DIR"
-        
-        if [ ! -d "${INSTALL_DIR}/.git" ]; then
-            git clone "$REPO_URL" .
-        else
-            git pull
-        fi
-        save_state "repository"
-    else
-        echo "Repository already set up, skipping..."
-    fi
-}
-
-setup_virtualenv() {
-    if [[ -z "${completed_steps[virtualenv]}" ]]; then
-        echo "Setting up virtual environment..."
-        cd "$INSTALL_DIR"
-        python3 -m venv "$VENV_DIR"
-        source "${VENV_DIR}/bin/activate"
-        pip install --upgrade pip
-        pip install -r requirements.txt
-        save_state "virtualenv"
-    else
-        echo "Virtual environment already set up, skipping..."
-    fi
-}
-
-create_command() {
-    if [[ -z "${completed_steps[command]}" ]]; then
-        echo "Creating keycloak-deploy command..."
-        cat > /usr/local/bin/keycloak-deploy << 'EOL'
-#!/bin/bash
-source /opt/fawz/keycloak/venv/bin/activate
-cd /opt/fawz/keycloak
-exec python deploy.py "$@"
-EOL
-        chmod +x /usr/local/bin/keycloak-deploy
-        save_state "command"
-    else
-        echo "Command already created, skipping..."
-    fi
-}
-
-# Error handling
-handle_error() {
-    local exit_code=$?
-    local failed_step=$1
-    
-    echo "Error occurred during $failed_step (exit code: $exit_code)"
-    
-    case $failed_step in
-        "dependencies")
-            # No specific cleanup needed for dependencies
+# Parse command line arguments
+RESET=0
+NO_CLONE=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --reset)
+            RESET=1
+            shift
             ;;
-        "repository")
-            cleanup_repository
+        --no-clone)
+            NO_CLONE=true
+            shift
             ;;
-        "virtualenv")
-            cleanup_venv
-            cleanup_repository
+        --help)
+            echo "Usage: $0 [OPTIONS]"
+            echo
+            echo "Options:"
+            echo "  --reset               Reset the installation"
+            echo "  --no-clone            Do not clone the repository"
+            echo "  --help                Show this help message"
+            exit 0
             ;;
-        "command")
-            cleanup_command
-            cleanup_venv
-            cleanup_repository
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
             ;;
     esac
-    
-    if [[ -f "$STATE_FILE" ]]; then
-        rm -f "$STATE_FILE"
+done
+
+# Initial configuration
+REPO_URL="https://git.rashidshafeev.ru/rashidshafeev/keycloak-management.git"
+INSTALL_DIR="/opt/fawz/keycloak"
+LOG_FILE="/var/log/keycloak-install.log"
+
+# Setup logging
+mkdir -p "$(dirname "$LOG_FILE")"
+exec 1> >(tee -a "$LOG_FILE")
+exec 2> >(tee -a "$LOG_FILE" >&2)
+echo "Starting installation at $(date)"
+
+# Check and install git if needed
+if ! command -v git &> /dev/null; then
+    echo "Git not found. Installing..."
+    apt-get update
+    apt-get install -y git
+fi
+
+# Create installation directory
+mkdir -p "${INSTALL_DIR}"
+
+# Clone or update repository
+if [ "$NO_CLONE" != "true" ]; then
+    if [ ! -d "${INSTALL_DIR}/.git" ]; then
+        echo "Cloning repository..."
+        if ! git clone "${REPO_URL}" "${INSTALL_DIR}"; then
+            echo "Error: Failed to clone repository"
+            exit 1
+        fi
+        
+        # Configure git to trust this directory
+        if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
+            echo "Configuring git to trust ${INSTALL_DIR}..."
+            git config --global --add safe.directory "${INSTALL_DIR}"
+        fi
+    else
+        echo "Repository exists, updating..."
+        cd "${INSTALL_DIR}"
+        git pull
     fi
-    
-    echo "Cleanup completed. Check $LOG_FILE for details."
-    exit $exit_code
-}
+fi
 
-# Main execution
-main() {
-    setup_logging
-    check_root
-    load_state
-    
-    # Backup existing installation
+# Check for .env.kcmanage in the current directory
+if [ -f ".env.kcmanage" ]; then
+    echo "Found .env.kcmanage, copying to repository..."
+    cp .env.kcmanage "${INSTALL_DIR}/.env"
+    chmod 600 "${INSTALL_DIR}/.env"  # Secure file permissions
+fi
+
+# Set up scripts directory path
+SCRIPTS_DIR="${INSTALL_DIR}/scripts/install"
+
+# Change to installation directory
+cd "${INSTALL_DIR}"
+
+# Source common functions
+source "${SCRIPTS_DIR}/common.sh"
+
+# Load modules in specific order
+modules=(
+    "cleanup.sh"
+    "command.sh"
+    "dependencies.sh"
+    "virtualenv.sh"
+)
+
+for module in "${modules[@]}"; do
+    module_path="${SCRIPTS_DIR}/${module}"
+    if [ -f "$module_path" ]; then
+        echo "Loading module: $module"
+        source "$module_path"
+    else
+        echo "Warning: Module $module not found in ${SCRIPTS_DIR}"
+    fi
+done
+
+# Handle reset if requested
+if [ $RESET -eq 1 ]; then
+    echo "Reset flag detected. Resetting installation..."
+    if ! reset_installation; then
+        echo "Reset failed!"
+        exit 1
+    fi
+    exit 0
+fi
+
+# Run installation steps
+echo "Starting installation process..."
+setup_logging
+load_state
+
+# Backup existing installation if present and not resetting
+if [ $RESET -eq 0 ]; then
     backup_existing
-    
-    # Installation steps with error handling
-    trap 'handle_error "dependencies"' ERR
-    install_dependencies
-    
-    trap 'handle_error "repository"' ERR
-    clone_repository
-    
-    trap 'handle_error "virtualenv"' ERR
-    setup_virtualenv
-    
-    trap 'handle_error "command"' ERR
-    create_command
-    
-    # Reset error handling
-    trap - ERR
-    
-    echo "Installation completed successfully!"
-    echo "You can now use 'sudo keycloak-deploy --domain your-domain.com --email admin@example.com' to run the deployment"
-}
+fi
 
-main "$@"
+# Trap for cleanup on error
+trap 'handle_error $? "Installation failed" "main"' ERR
+
+# Run installation steps
+install_dependencies
+setup_virtualenv
+create_command
+
+# Remove error trap
+trap - ERR
+
+echo "Installation completed successfully!"
+echo "You can now use 'kcmanage' command to manage your Keycloak deployment."
+echo
+echo "Available commands:"
+echo "  kcmanage setup     - Initial setup and configuration"
+echo "  kcmanage deploy    - Deploy Keycloak"
+echo "  kcmanage status    - Check deployment status"
+echo "  kcmanage backup    - Create a backup"
+echo "  kcmanage restore   - Restore from backup"
+echo
+echo "To reset the installation, run:"
+echo "  $0 --reset"
