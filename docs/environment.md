@@ -4,79 +4,168 @@ This document describes all environment variables used in the Keycloak Managemen
 
 ## Core Configuration
 
-### Keycloak
+### Keycloak Server
+- `KEYCLOAK_DOMAIN`: Domain name for Keycloak server
+- `KEYCLOAK_PORT`: Port for Keycloak server (default: 8443)
 - `KEYCLOAK_ADMIN`: Admin username for Keycloak (default: admin)
 - `KEYCLOAK_ADMIN_PASSWORD`: Admin password for Keycloak
-- `KEYCLOAK_DB_PASSWORD`: Password for Keycloak database
+- `KEYCLOAK_ADMIN_EMAIL`: Email address for admin account
+
+### Database
+- `DB_HOST`: Database host (default: localhost)
+- `DB_PORT`: Database port (default: 5432)
+- `DB_NAME`: Database name (default: keycloak)
+- `DB_USER`: Database username (default: keycloak)
+- `DB_PASSWORD`: Database password
 
 ### Docker
 - `DOCKER_REGISTRY`: Docker registry to use (default: docker.io)
 - `KEYCLOAK_VERSION`: Keycloak image version (default: latest)
 - `POSTGRES_VERSION`: PostgreSQL image version (default: latest)
 
-### SSL
+### SSL/TLS
 - `SSL_CERT_PATH`: Path to SSL certificate file
 - `SSL_KEY_PATH`: Path to SSL private key file
+- `SSL_STAGING`: Use Let's Encrypt staging environment (default: false)
+- `SSL_AUTO_RENEWAL`: Enable automatic certificate renewal (default: true)
 
-## Monitoring Configuration
+## Component-Specific Variables
 
-### Prometheus
-- `PROMETHEUS_SCRAPE_INTERVAL`: How frequently to scrape targets (default: 15s)
-- `PROMETHEUS_EVAL_INTERVAL`: How frequently to evaluate rules (default: 15s)
-- `PROMETHEUS_RETENTION_TIME`: How long to retain data (default: 15d)
-- `PROMETHEUS_STORAGE_SIZE`: Maximum storage size for metrics (default: 50GB)
+Each deployment step manages its own required variables:
 
-### Grafana
-- `GRAFANA_ADMIN_USER`: Admin username for Grafana (default: admin)
-- `GRAFANA_ADMIN_PASSWORD`: Admin password for Grafana
+### 1. System Preparation Step
+Required packages:
+- apt-transport-https
+- ca-certificates
+- curl
+- gnupg
 
-#### SMTP Configuration
-- `GRAFANA_SMTP_ENABLED`: Enable SMTP for email alerts (default: true)
-- `GRAFANA_SMTP_HOST`: SMTP server hostname
-- `GRAFANA_SMTP_PORT`: SMTP server port (default: 587)
-- `GRAFANA_SMTP_USER`: SMTP username
-- `GRAFANA_SMTP_PASSWORD`: SMTP password
-- `GRAFANA_SMTP_FROM`: From email address for alerts
+No specific environment variables required.
 
-#### Alert Notifications
-- `GRAFANA_ALERT_EMAIL`: Email address to receive alerts
-- `GRAFANA_SLACK_WEBHOOK_URL`: Slack webhook URL for alerts
-- `GRAFANA_SLACK_CHANNEL`: Slack channel for alerts (default: #alerts)
+### 2. Docker Setup Step
+Required variables:
+- `DOCKER_REGISTRY`
+- `FIREWALL_ALLOWED_PORTS` (for container ports)
 
-## Security Configuration
+Dependencies:
+- Docker Engine
+- Docker Compose
 
-### Wazuh
-- `WAZUH_MANAGER_IP`: IP address of Wazuh manager (default: localhost)
-- `WAZUH_REGISTRATION_PASSWORD`: Password for agent registration
-- `WAZUH_AGENT_NAME`: Name for this Wazuh agent
+### 3. Certificate Management Step
+Required variables:
+- `KEYCLOAK_DOMAIN`
+- `SSL_CERT_PATH`
+- `SSL_KEY_PATH`
+- `SSL_STAGING`
+- `SSL_AUTO_RENEWAL`
 
-### Firewall
-- `FIREWALL_MAX_BACKUPS`: Number of firewall config backups to keep (default: 5)
-- `FIREWALL_ALLOWED_PORTS`: Comma-separated list of allowed ports
-- `FIREWALL_ADMIN_IPS`: Comma-separated list of admin IPs
+Dependencies:
+- certbot
+- openssl
 
-## System Configuration
+### 4. Keycloak Deployment Step
+Required variables:
+- `KEYCLOAK_PORT`
+- `KEYCLOAK_ADMIN`
+- `KEYCLOAK_ADMIN_PASSWORD`
+- `KEYCLOAK_ADMIN_EMAIL`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
 
-### Backup
-- `BACKUP_RETENTION_DAYS`: Days to keep backups (default: 30)
-- `BACKUP_STORAGE_PATH`: Path to store backups
+Dependencies:
+- Docker network
+- Docker volumes
 
-### Logging
-- `LOG_LEVEL`: Logging level (default: INFO)
-- `LOG_FORMAT`: Log format (default: json)
-- `LOG_MAX_SIZE`: Maximum size of log files (default: 100MB)
-- `LOG_MAX_FILES`: Number of log files to keep (default: 10)
+### 5. Monitoring Setup Step
+Required variables:
+- `PROMETHEUS_SCRAPE_INTERVAL`
+- `PROMETHEUS_EVAL_INTERVAL`
+- `PROMETHEUS_RETENTION_TIME`
+- `PROMETHEUS_DATA_DIR`
+- `GRAFANA_ADMIN_USER`
+- `GRAFANA_ADMIN_PASSWORD`
 
-## Usage
+Dependencies:
+- prometheus
+- grafana-server
+- node_exporter
 
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
+### 6. Backup Configuration Step
+Required variables:
+- `BACKUP_STORAGE_PATH`
+- `BACKUP_TIME`
+- `BACKUP_RETENTION_DAYS`
+- `BACKUP_ENCRYPTION_KEY`
+
+Dependencies:
+- cron
+- pg_dump
+
+## Variable Management
+
+Each component follows this process for managing variables:
+
+1. **Variable Definition**
+   ```python
+   required_vars = [
+       {
+           'name': 'VARIABLE_NAME',
+           'prompt': 'User-friendly prompt',
+           'default': 'default_value'
+       }
+   ]
    ```
 
-2. Update the values in `.env` according to your environment:
-   ```bash
-   vim .env
-   ```
+2. **Variable Resolution**
+   - Check .env file first
+   - Prompt user if missing
+   - Save to .env for reuse
+   - Validate before use
 
-3. The system will automatically load these variables during deployment.
+3. **Dependency Handling**
+   - Check dependencies before use
+   - Install if missing
+   - Verify installation
+   - Handle failures
+
+## Usage Example
+
+```python
+# In a deployment step
+from src.utils.environment import get_environment_manager
+
+env_manager = get_environment_manager()
+required_vars = [
+    {
+        'name': 'KEYCLOAK_PORT',
+        'prompt': 'Enter Keycloak port',
+        'default': '8443'
+    }
+]
+
+# Get variables (will prompt if missing)
+env_vars = env_manager.get_or_prompt_vars(required_vars)
+```
+
+## Best Practices
+
+1. **Variable Definition**
+   - Clear, descriptive names
+   - Meaningful defaults where possible
+   - Comprehensive prompts
+   - Proper validation
+
+2. **Security**
+   - Secure storage of sensitive values
+   - Encryption of credentials
+   - Proper file permissions
+   - Secure variable handling
+
+3. **Maintenance**
+   - Regular validation
+   - Update documentation
+   - Monitor for changes
+   - Clean unused variables

@@ -1,0 +1,76 @@
+# Keycloak Installation Summary
+
+## Installation Details
+- **Installation Date**: ${INSTALL_DATE}
+- **Installation Root**: ${INSTALL_ROOT}
+- **Debug Mode**: ${DEBUG_MODE}
+
+## Access Information
+
+### Keycloak
+- **Host**: ${KEYCLOAK_HOST}
+- **Port**: ${KEYCLOAK_PORT}
+- **Admin Username**: ${KEYCLOAK_ADMIN}
+- **Admin Password**: ${KEYCLOAK_ADMIN_PASSWORD}
+- **Admin Console**: https://${KEYCLOAK_HOST}:${KEYCLOAK_PORT}/admin
+
+### Database
+- **Host**: ${DB_HOST}
+- **Port**: ${DB_PORT}
+- **Database**: ${DB_NAME}
+- **Username**: ${DB_USER}
+- **Password**: ${DB_PASSWORD}
+
+## Monitoring
+
+### Prometheus
+- **Host**: ${PROMETHEUS_HOST}
+- **Data Directory**: ${PROMETHEUS_DATA_DIR}
+
+### Grafana
+- **Host**: ${GRAFANA_HOST}
+- **Admin User**: ${GRAFANA_ADMIN_USER}
+- **Admin Password**: ${GRAFANA_ADMIN_PASSWORD}
+- **Alert Email**: ${GRAFANA_ALERT_EMAIL}
+- **Slack Channel**: ${GRAFANA_SLACK_CHANNEL}
+
+## Security
+
+### SSL/TLS
+- **Certificate Path**: ${SSL_CERT_PATH}
+- **Key Path**: ${SSL_KEY_PATH}
+- **Expiry Date**: ${SSL_EXPIRY_DATE}
+
+### Firewall
+- **Allowed Ports**: ${FIREWALL_ALLOWED_PORTS}
+- **Admin IPs**: ${FIREWALL_ADMIN_IPS}
+
+### Wazuh
+- **Manager IP**: ${WAZUH_MANAGER_IP}
+- **Agent Name**: ${WAZUH_AGENT_NAME}
+- **Agent ID**: ${WAZUH_AGENT_ID}
+
+## Backup Configuration
+- **Storage Path**: ${BACKUP_STORAGE_PATH}
+- **Backup Time**: ${BACKUP_TIME}
+- **Retention Days**: ${BACKUP_RETENTION_DAYS}
+- **Last Backup**: ${LAST_BACKUP_DATE}
+
+## Directory Structure
+- **Installation Root**: ${INSTALL_ROOT}
+- **Configuration Directory**: ${CONFIG_DIR}
+- **Log Directory**: ${LOG_DIR}
+- **Docker Volumes**: ${DOCKER_VOLUMES_PATH}
+
+## Service Status
+
+${SERVICE_STATUS}
+
+## Support Information
+- **Support Email**: ${SUPPORT_EMAIL}
+
+## Additional Notes
+${ADDITIONAL_NOTES}
+
+---
+This summary was automatically generated during installation. Please keep this information secure.
