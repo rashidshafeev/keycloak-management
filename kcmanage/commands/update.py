@@ -37,3 +37,7 @@ def update():
             
         click.echo(result.stdout)
         click.echo("Update completed successfully!")
+        
+    except Exception as e:
+        click.echo(f"Update failed: {str(e)}", err=True)
+        exit(1)
