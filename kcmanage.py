@@ -3,6 +3,7 @@
 import click
 import logging
 import os
+import subprocess
 from pathlib import Path
 import sys
 from datetime import datetime
