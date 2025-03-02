@@ -86,7 +86,7 @@ if [ -f ".env.kcmanage" ]; then
 fi
 
 # Set up scripts directory path
-SCRIPTS_DIR="${INSTALL_DIR}/scripts/install"
+SCRIPTS_DIR="${INSTALL_DIR}/prepare"
 
 # Change to installation directory
 cd "${INSTALL_DIR}"
