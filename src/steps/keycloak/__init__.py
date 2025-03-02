@@ -1,3 +1,9 @@
-from .deploy import KeycloakDeployStep
+"""
+Keycloak deployment module.
 
-__all__ = ['KeycloakDeployStep']
+This module provides functionality for deploying and configuring Keycloak servers.
+"""
+
+from .keycloak_deploymentstep import KeycloakDeploymentstep
+
+__all__ = ['KeycloakDeploymentstep']

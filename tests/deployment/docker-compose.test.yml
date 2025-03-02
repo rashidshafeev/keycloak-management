@@ -11,6 +11,6 @@ services:
     volumes:
       - ./test-entrypoint.sh:/root/test-entrypoint.sh
       - ../../install.sh:/root/install.sh
-      - ../../.env.test:/root/.env.test
+      - /.env.test:/root/.env.kcmanage
     privileged: true
     command: ["/bin/bash", "/root/test-entrypoint.sh"]

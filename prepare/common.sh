@@ -58,29 +58,6 @@ handle_error() {
     exit "${exit_code}"
 }
 
-clone_repository() {
-    if [[ -z "${completed_steps[repository]}" ]]; then
-        echo "Setting up repository..."
-        
-        # Configure git to trust this directory if needed
-        if ! git config --global --get-all safe.directory | grep -q "^${INSTALL_DIR}\$"; then
-            echo "Configuring git to trust ${INSTALL_DIR}..."
-            git config --global --add safe.directory "${INSTALL_DIR}"
-        fi
-        
-        # Update repository if it exists
-        if [ -d "${INSTALL_DIR}/.git" ]; then
-            echo "Repository exists, updating..."
-            cd "${INSTALL_DIR}"
-            git pull
-        fi
-        
-        save_state "repository"
-    else
-        echo "Repository already set up, skipping..."
-    fi
-}
-
 reset_installation() {
     echo "Performing reset..."
     
@@ -119,7 +96,6 @@ reset_installation() {
 export -f handle_error
 export -f save_state
 export -f load_state
-export -f clone_repository
 export -f reset_installation
 export -f setup_logging
 export completed_steps

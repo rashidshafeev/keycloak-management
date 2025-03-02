@@ -13,10 +13,6 @@ if [ ! -z "$GIT_USERNAME" ] && [ ! -z "$GIT_PASSWORD" ]; then
     chmod 600 ~/.git-credentials
 fi
 
-# Copy test environment file
-echo "Copying test environment file..."
-cp /root/.env.test /root/.env.kcmanage
-
 # Copy install script to home directory (simulating real user scenario)
 echo "Copying install script to home directory..."
 cp /root/install.sh /root/
