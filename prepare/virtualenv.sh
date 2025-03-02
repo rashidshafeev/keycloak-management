@@ -8,7 +8,7 @@ setup_virtualenv() {
         if ! command -v python3 &> /dev/null; then
             echo "Installing Python3..."
             apt-get update
-            apt-get install -y python3 python3-pip python3-venv build-essential python3-dev
+            apt-get install -y python3 python3-pip python3-venv
         fi
 
         # Create virtual environment
@@ -32,7 +32,7 @@ setup_virtualenv() {
 
         # Verify key Python packages are installed
         echo "Verifying Python installation..."
-        python3 -c "import click; import docker; import requests" || handle_error $? "Failed to verify Python packages" "setup_virtualenv"
+        python3 -c "import click; import yaml; import jsonschema" || handle_error $? "Failed to verify Python packages" "setup_virtualenv"
 
         save_state "virtualenv"
     else

@@ -1,6 +1,5 @@
 #!/bin/bash
-
-source "./scripts/install/common.sh"
+source "./prepare/common.sh"
 
 cleanup_repository() {
     echo "Cleaning up repository..."
@@ -10,9 +9,9 @@ cleanup_repository() {
 }
 
 cleanup_command() {
-    echo "Cleaning up keycloak-deploy command..."
-    if [[ -f "/usr/local/bin/keycloak-deploy" ]]; then
-        rm -f "/usr/local/bin/keycloak-deploy"
+    echo "Cleaning up kcmanage command..."
+    if [[ -f "/usr/local/bin/kcmanage" ]]; then
+        rm -f "/usr/local/bin/kcmanage"
     fi
 }
 
@@ -32,12 +31,6 @@ backup_existing() {
 reset_installation() {
     # Backup before reset
     backup_existing
-    
-    # Stop and remove Docker containers
-    if command -v docker &> /dev/null; then
-        echo "Stopping Docker containers..."
-        docker-compose down -v || true
-    fi
     
     # Clean up repository
     cleanup_repository
@@ -59,3 +52,8 @@ reset_installation() {
     
     return 0
 }
+
+export -f cleanup_repository
+export -f cleanup_command
+export -f backup_existing
+export -f reset_installation

@@ -10,15 +10,21 @@ create_command() {
         cat > /usr/local/bin/kcmanage << EOL
 #!/bin/bash
 # Get the directory where Keycloak is installed
-INSTALL_DIR="/opt/fawz/keycloak"
+INSTALL_DIR="\${INSTALL_DIR:-/opt/fawz/keycloak}"
 VENV_DIR="\${INSTALL_DIR}/venv"
+
+# Check if virtual environment exists
+if [ ! -d "\${VENV_DIR}" ]; then
+    echo "Virtual environment not found. Please run the installation script first."
+    exit 1
+fi
 
 # Activate virtual environment
 source "\${VENV_DIR}/bin/activate"
-# Export the installation directory so the update command can use it
-export INSTALL_DIR
+
 # Execute the Python script with all arguments
 python "\${INSTALL_DIR}/kcmanage.py" "\$@"
+
 # Deactivate virtual environment
 deactivate
 EOL
@@ -31,5 +37,4 @@ EOL
         echo "Command already created, skipping..."
     fi
 }
-
-create_command
+export -f create_command
