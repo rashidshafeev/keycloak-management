@@ -19,11 +19,12 @@ if [ ! -d "\${VENV_DIR}" ]; then
     exit 1
 fi
 
-# Activate virtual environment
+# Activate virtual environment and add package to PYTHONPATH
 source "\${VENV_DIR}/bin/activate"
+export PYTHONPATH="\${INSTALL_DIR}:\${PYTHONPATH}"
 
-# Execute the Python script with all arguments
-python "\${INSTALL_DIR}/kcmanage.py" "\$@"
+# Execute the Python module with all arguments
+python -m kcmanage "\$@"
 
 # Deactivate virtual environment
 deactivate

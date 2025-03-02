@@ -301,24 +301,24 @@ def update():
         click.echo(result.stdout)
         click.echo("Update completed successfully!")
         
-        # Check if we need to reinstall dependencies
-        requirements_file = repo_dir / "requirements.txt"
-        if requirements_file.exists():
-            if click.confirm("Would you like to update Python dependencies?", default=True):
-                venv_dir = repo_dir / "venv"
-                if venv_dir.exists():
-                    click.echo("Updating Python dependencies...")
-                    pip_result = subprocess.run(
-                        [f"{venv_dir}/bin/pip", "install", "-r", "requirements.txt"],
-                        capture_output=True,
-                        text=True,
-                        check=False
-                    )
+        # # Check if we need to reinstall dependencies
+        # requirements_file = repo_dir / "requirements.txt"
+        # if requirements_file.exists():
+        #     if click.confirm("Would you like to update Python dependencies?", default=True):
+        #         venv_dir = repo_dir / "venv"
+        #         if venv_dir.exists():
+        #             click.echo("Updating Python dependencies...")
+        #             pip_result = subprocess.run(
+        #                 [f"{venv_dir}/bin/pip", "install", "-r", "requirements.txt"],
+        #                 capture_output=True,
+        #                 text=True,
+        #                 check=False
+        #             )
                     
-                    if pip_result.returncode != 0:
-                        click.echo(f"Warning: Failed to update Python dependencies: {pip_result.stderr}", err=True)
-                    else:
-                        click.echo("Python dependencies updated successfully")
+        #             if pip_result.returncode != 0:
+        #                 click.echo(f"Warning: Failed to update Python dependencies: {pip_result.stderr}", err=True)
+        #             else:
+        #                 click.echo("Python dependencies updated successfully")
         
     except Exception as e:
         click.echo(f"Update failed: {str(e)}", err=True)
