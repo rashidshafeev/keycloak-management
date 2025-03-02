@@ -39,7 +39,7 @@ export INSTALL_DIR VENV_DIR STATE_FILE
 mkdir -p "${INSTALL_DIR}"
 
 # Set up scripts directory path
-SCRIPTS_DIR="./prepare"
+SCRIPTS_DIR="${INSTALL_DIR}/prepare"
 
 # Source common functions
 source "${SCRIPTS_DIR}/common.sh"
