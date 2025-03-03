@@ -95,7 +95,7 @@ def deploy(verbose, step, dry_run):
             ("docker", "src.steps.docker", "DockerSetupStep"),
             ("firewall", "src.steps.firewall", "FirewallStep"),
             ("certificates", "src.steps.certificates", "CertificateStep"),
-            ("keycloak", "src.steps.keycloak", "KeycloakDeployStep")
+            ("keycloak", "src.steps.keycloak", "KeycloakDeploymentstep")  # Fixed class name
         ]
         
         steps = {}
@@ -110,6 +110,11 @@ def deploy(verbose, step, dry_run):
                 logger.error(f"Failed to import {step_id} step: {e}")
                 logger.debug(traceback.format_exc())
                 click.echo(f"Warning: Could not import {step_id} step - {e}", err=True)
+                # Continue with other steps
+            except AttributeError as e:
+                logger.error(f"Failed to find class '{class_name}' in {module_path}: {e}")
+                logger.debug(traceback.format_exc())
+                click.echo(f"Warning: Class '{class_name}' not found in module {module_path}", err=True)
                 # Continue with other steps
                 
         # Add steps to orchestrator based on filter if provided
