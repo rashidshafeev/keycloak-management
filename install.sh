@@ -10,8 +10,6 @@ fi
 RESET=0
 NO_CLONE=false
 UPDATE=false
-VERBOSE=false
-
 while [[ $# -gt 0 ]]; do
     case $1 in
         --reset)
@@ -26,10 +24,6 @@ while [[ $# -gt 0 ]]; do
             UPDATE=true
             shift
             ;;
-        --verbose)
-            VERBOSE=true
-            shift
-            ;;
         --help)
             echo "Usage: $0 [OPTIONS]"
             echo
@@ -37,7 +31,6 @@ while [[ $# -gt 0 ]]; do
             echo "  --reset               Reset the installation"
             echo "  --no-clone            Do not clone the repository"
             echo "  --update              Update the installation (git pull)"
-            echo "  --verbose             Enable verbose output"
             echo "  --help                Show this help message"
             exit 0
             ;;
@@ -56,19 +49,9 @@ LOG_FILE="/var/log/keycloak-install.log"
 
 # Setup logging
 mkdir -p "$(dirname "$LOG_FILE")"
-if [ "$VERBOSE" = true ]; then
-    # More verbose logging
-    exec 1> >(tee -a "$LOG_FILE")
-    exec 2> >(tee -a "$LOG_FILE" >&2)
-    set -x  # Enable debug mode to show each command
-else
-    exec 1> >(tee -a "$LOG_FILE")
-    exec 2> >(tee -a "$LOG_FILE" >&2)
-fi
-
-echo "======================================================"
-echo "Starting Keycloak Management installation at $(date)"
-echo "======================================================"
+exec 1> >(tee -a "$LOG_FILE")
+exec 2> >(tee -a "$LOG_FILE" >&2)
+echo "Starting installation at $(date)"
 
 # Check and install git if needed
 if ! command -v git &> /dev/null; then
@@ -115,25 +98,7 @@ PREPARE_DIR="${INSTALL_DIR}/prepare"
 cd "${INSTALL_DIR}"
 
 # Source common functions
-if [ -f "${PREPARE_DIR}/common.sh" ]; then
-    echo "Loading common functions..."
-    source "${PREPARE_DIR}/common.sh"
-else
-    echo "ERROR: common.sh not found in ${PREPARE_DIR}"
-    exit 1
-fi
-
-# Check system dependencies first
-if [ -f "${PREPARE_DIR}/system_deps.sh" ]; then
-    echo "Checking system dependencies..."
-    source "${PREPARE_DIR}/system_deps.sh"
-    if ! install_system_dependencies; then
-        echo "ERROR: Failed to install system dependencies"
-        exit 1
-    fi
-else
-    echo "WARNING: system_deps.sh not found, skipping dependency check"
-fi
+source "${PREPARE_DIR}/common.sh"
 
 # Load modules in specific order
 modules=(
@@ -176,46 +141,13 @@ fi
 trap 'handle_error $? "Installation failed" "main"' ERR
 
 # Run installation steps
-echo "Setting up Python virtual environment..."
-if ! setup_virtualenv; then
-    echo "ERROR: Failed to set up Python virtual environment"
-    exit 1
-fi
-
-echo "Creating kcmanage command..."
-if ! create_command; then
-    echo "ERROR: Failed to create kcmanage command"
-    exit 1
-fi
+setup_virtualenv
+create_command
 
 # Remove error trap
 trap - ERR
 
-# Test the installation
-echo "Testing installation..."
-if command -v kcmanage &> /dev/null; then
-    echo "kcmanage command is available"
-    
-    # Test basic Python imports
-    echo "Testing Python environment..."
-    source "${INSTALL_DIR}/venv/bin/activate"
-    
-    PYTHON_TEST=$(python3 -c "import sys; print('Python path:', sys.path); print('Python version:', sys.version); try: import ssl; print('SSL version:', ssl.OPENSSL_VERSION); except ImportError as e: print('SSL import error:', e); try: import OpenSSL; print('PyOpenSSL version:', OpenSSL.__version__); except ImportError as e: print('PyOpenSSL import error:', e);" 2>&1)
-    
-    echo "Python environment test results:"
-    echo "$PYTHON_TEST"
-    
-    if echo "$PYTHON_TEST" | grep -q "PyOpenSSL import error"; then
-        echo "WARNING: PyOpenSSL module is not available. Some features may not work correctly."
-        echo "Try running: pip install pyOpenSSL"
-    fi
-else
-    echo "WARNING: kcmanage command is not available. Installation may have failed."
-fi
-
-echo "====================================================="
-echo "Installation completed at $(date)"
-echo "====================================================="
+echo "Installation completed successfully!"
 echo "You can now use 'kcmanage' command to manage your Keycloak deployment."
 echo
 echo "Available commands:"
@@ -228,7 +160,3 @@ echo "  kcmanage update    - Update the software (git pull)"
 echo
 echo "To reset the installation, run:"
 echo "  $0 --reset"
-echo
-echo "For troubleshooting information, see the documentation:"
-echo "  ${INSTALL_DIR}/docs/debugging-guide.md"
-echo "====================================================="
