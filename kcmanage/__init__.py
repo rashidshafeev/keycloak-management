@@ -1,51 +1,35 @@
 #!/usr/bin/env python3
 import click
-import logging
-import sys
-import traceback
 import importlib
+import sys
+from .utils.logger import get_logger
 
-# Set up logging
-logging.basicConfig(
-    level=logging.DEBUG,  # Enable debug-level logging for more verbose output
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-
-logger = logging.getLogger("kcmanage")
+# Set up enhanced logging
+logger = get_logger("kcmanage", level="DEBUG")
 
 @click.group()
 def cli():
     """Keycloak Management CLI"""
     logger.debug("Starting kcmanage CLI")
     
-    # Log Python environment details to help with debugging
-    logger.debug(f"Python version: {sys.version}")
-    logger.debug(f"Python executable: {sys.executable}")
-    logger.debug(f"Python path: {sys.path}")
+    # Log Python environment info on startup
+    logger.log_environment()
     
     # Check for critical dependencies
-    try:
-        logger.debug("Checking for OpenSSL...")
-        import ssl
-        logger.debug(f"SSL version: {ssl.OPENSSL_VERSION}")
-    except ImportError as e:
-        logger.error(f"SSL module import error: {e}")
-        logger.debug(traceback.format_exc())
-        click.echo("ERROR: OpenSSL module not available. You may need to install libssl-dev/openssl-devel package.", err=True)
+    dependencies = ['ssl', 'OpenSSL', 'requests', 'docker']
+    dependency_status = logger.check_dependencies(dependencies)
     
-    # Try to import OpenSSL directly to check if it's the specific issue
-    try:
-        logger.debug("Attempting to import OpenSSL directly...")
-        import OpenSSL
-        logger.debug("OpenSSL module imported successfully")
-    except ImportError as e:
-        logger.error(f"OpenSSL import error: {e}")
-        logger.debug(traceback.format_exc())
-        click.echo("ERROR: Python OpenSSL module not available. Try running: pip install pyOpenSSL", err=True)
+    # Check OpenSSL specifically
+    if not dependency_status.get('OpenSSL', False):
+        click.echo("WARNING: OpenSSL module not available. Some features may not work correctly.", err=True)
+        click.echo("Try running: pip install pyOpenSSL", err=True)
+    
+    # Display a notice if docker is not available
+    if not dependency_status.get('docker', False):
+        click.echo("WARNING: Docker SDK not available. Deployment commands will not work.", err=True)
+        click.echo("Try running: pip install docker", err=True)
     
     logger.debug("CLI initialization complete")
-    pass
 
 # Import commands with better error handling
 commands_to_import = [
@@ -67,18 +51,13 @@ for cmd_name, module_path in commands_to_import:
         logger.debug(f"Successfully imported {cmd_name} command")
     except ImportError as e:
         logger.error(f"Failed to import {cmd_name} command: {e}")
-        logger.debug(traceback.format_exc())
         # Continue to try other commands even if one fails
-        continue
     except Exception as e:
-        logger.error(f"Error importing {cmd_name} command: {e}")
-        logger.debug(traceback.format_exc())
-        continue
+        logger.exception(e, f"Error importing {cmd_name} command")
 
 if __name__ == "__main__":
     try:
         cli()
     except Exception as e:
-        logger.error(f"Unhandled exception: {e}")
-        logger.debug(traceback.format_exc())
+        logger.exception(e, "Unhandled exception in CLI")
         sys.exit(1)
