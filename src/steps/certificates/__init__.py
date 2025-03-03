@@ -1,3 +1,3 @@
-from .certificatestep import CertificateStepstep
+from .certificatestep import CertificateStep
 
-__all__ = ['CertificateStepstep']
+__all__ = ['CertificateStep']
